@@ -244,8 +244,9 @@ async function deliverInvitations(ctx: Ctx, eventId: string, items: Issued[]): P
           attachments: [{ filename: 'qr.png', content: qr, cid: 'qr', contentType: 'image/png' }],
         });
         sent++;
-      } catch {
+      } catch (e) {
         ok = false;
+        if (config().LOG_LEVEL !== 'silent') console.error(`[mail] invitation for ticket ${row.ticketNumber as string} failed: ${(e as Error).message}`);
       }
       await ctx.db.query(
         `INSERT INTO invitations (company_id, ticket_id, guest_id, event_id, sent, sent_at, delivery_status) VALUES ($7,$1,$2,$3,$4,$5,$6)`,

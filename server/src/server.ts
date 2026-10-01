@@ -3,6 +3,7 @@ import { createApp } from './app';
 import { config } from './config';
 import { migrateUp, migrationsDir } from './db/migrator';
 import { closePool, ensureDatabase, pool } from './db/pools';
+import { checkMailSetup } from './services/mailer';
 import { syncBootstrapAdmin } from './services/platform';
 
 /** Bring the shared database up to the latest schema. No manual DB steps needed. */
@@ -20,6 +21,7 @@ export async function startServer(): Promise<{ server: Server; stop: () => Promi
     const s = app.listen(config().PORT, () => resolve(s));
   });
   console.log(`Inviteley API listening on :${config().PORT}`);
+  void checkMailSetup();
   const stop = async () => {
     await new Promise<void>((r) => server.close(() => r()));
     await closePool();

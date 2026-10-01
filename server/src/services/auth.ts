@@ -7,7 +7,7 @@ import { pool } from '../db/pools';
 import { AppError, conflict, forbidden, parse, unauthorized } from '../lib/errors';
 import { generateQrToken, sha256Hex } from '../lib/crypto';
 import type { Role } from '../lib/permissions';
-import { escapeHtml, sendMail, trySendMail } from './mailer';
+import { escapeHtml, trySendMail } from './mailer';
 
 export const rounds = () => (config().NODE_ENV === 'test' ? 4 : 12);
 // Compared against when the email is unknown so response time does not reveal which emails exist.
@@ -239,7 +239,8 @@ export async function requestPasswordReset(input: unknown): Promise<void> {
     [sha256Hex(raw), u.id],
   );
   const link = `${config().APP_URL}/reset-password?token=${raw}`;
-  await sendMail({
+  // trySendMail: a mail error must not change the response, or it would reveal which emails have accounts.
+  await trySendMail({
     to: email,
     subject: 'Reset your Inviteley password',
     text: `Use this link within one hour to reset your password:\n${link}\n\nIf you did not request this, ignore this email.`,
