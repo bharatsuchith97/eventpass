@@ -7,7 +7,7 @@
     <meta name="description" content="Inviteley manages guest lists, emails QR passes and checks guests in at the door in seconds. Your guest data stays private to your company. Request access today." />
     <link rel="canonical" href="__APP_URL__/" />
     <meta name="robots" content="index, follow" />
-    <meta name="theme-color" content="#1565c0" />
+    <meta name="theme-color" content="#1f5eff" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/manifest.webmanifest" />
 
@@ -45,8 +45,11 @@
         ]
       }
     </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Instrument+Sans:wght@400..700&display=swap" />
     <link rel="stylesheet" href="/src/landing/landing.css" />
-    <noscript><style>@media (max-width: 880px) { .site-nav { display: flex; position: static; } .menu-toggle { display: none; } .header-row { flex-wrap: wrap; } }</style></noscript>
+    <noscript><style>@media (max-width: 900px) { .site-nav { display: flex; position: static; } .menu-toggle { display: none; } .header-row { flex-wrap: wrap; } }</style></noscript>
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
@@ -54,7 +57,7 @@
     <header class="site-header">
       <div class="wrap header-row">
         <a class="brand" href="/" aria-label="Inviteley home">
-          <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="currentColor" /><path d="M9 9h6v6H9zM17 9h6v6h-6zM9 17h6v6H9zM19 19h4v4h-4z" fill="#fff" /></svg>
+          <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="currentColor" /><path d="M9 9h6v6H9zM17 9h6v6h-6zM9 17h6v6H9zM19 19h4v4h-4z" fill="#fff" /></svg>
           <span>Inviteley</span>
         </a>
         <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
@@ -63,8 +66,8 @@
         </button>
         <nav id="site-nav" class="site-nav" aria-label="Main">
           <a href="#features">Features</a>
+          <a href="#door">At the door</a>
           <a href="#how-it-works">How it works</a>
-          <a href="#privacy">Privacy</a>
           <a href="#plans">Plans</a>
           <a href="#faq">FAQ</a>
           <span class="nav-actions">
@@ -76,11 +79,12 @@
     </header>
 
     <main id="main">
+      <!-- Hero ----------------------------------------------------------------------------------- -->
       <section class="hero">
         <div class="wrap hero-grid">
-          <div>
-            <p class="eyebrow">Event guest management &amp; QR check-in</p>
-            <h1>From guest list to front door, without the queue.</h1>
+          <div class="hero-copy">
+            <p class="eyebrow"><span class="dot" aria-hidden="true"></span>Guest lists · QR passes · Door check-in</p>
+            <h1>From guest list to front door, <em>without the queue.</em></h1>
             <p class="lead">
               Import your guests, email everyone a personal QR pass and check them in at the door in seconds.
               Inviteley catches duplicate and cancelled passes for you, and keeps your guest list private to your company.
@@ -96,35 +100,43 @@
             </ul>
           </div>
 
-          <figure class="hero-visual" aria-label="A phone at the event entrance showing a successful check-in">
-            <svg viewBox="0 0 320 560" role="img" aria-labelledby="hero-svg-title">
-              <title id="hero-svg-title">Check-in screen showing a green “Checked in” result for a VIP guest</title>
-              <rect x="10" y="6" width="300" height="548" rx="40" fill="#0f172a" />
-              <rect x="24" y="20" width="272" height="520" rx="30" fill="#f5f7fa" />
-              <rect x="120" y="30" width="80" height="8" rx="4" fill="#cbd5e1" />
-              <text x="44" y="78" font-size="15" font-weight="700" fill="#0f172a">Summer Gala · Door A</text>
-              <text x="44" y="98" font-size="12" fill="#64748b">312 of 450 checked in</text>
-              <rect x="44" y="108" width="232" height="8" rx="4" fill="#e2e8f0" />
-              <rect x="44" y="108" width="161" height="8" rx="4" fill="#1565c0" />
-              <rect x="44" y="136" width="232" height="244" rx="22" fill="#2e7d32" />
-              <circle cx="160" cy="208" r="40" fill="#fff" fill-opacity=".18" />
-              <path d="M140 208l14 14 28-30" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
-              <text x="160" y="284" font-size="24" font-weight="800" fill="#fff" text-anchor="middle">Checked in</text>
-              <text x="160" y="312" font-size="15" fill="#fff" text-anchor="middle">Ada Lovelace</text>
-              <rect x="134" y="326" width="52" height="22" rx="11" fill="#fff" fill-opacity=".22" />
-              <text x="160" y="341" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">VIP</text>
-              <rect x="44" y="400" width="232" height="52" rx="14" fill="#fff" stroke="#e2e8f0" />
-              <text x="64" y="431" font-size="13" fill="#475569">Next guest? Scan the QR code</text>
-              <rect x="44" y="466" width="232" height="52" rx="14" fill="#1565c0" />
-              <text x="160" y="497" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">Scan next pass</text>
-            </svg>
-          </figure>
+          <div class="hero-art" aria-hidden="true">
+            <div class="pass">
+              <div class="pass-top">
+                <span class="pass-logo">Your logo</span>
+                <span class="pass-org">YOUR COMPANY</span>
+                <strong class="pass-event">Summer Gala</strong>
+                <span class="pass-when">Sat 18 Oct · 7:00 pm · Main Hall</span>
+              </div>
+              <div class="pass-perf"></div>
+              <div class="pass-body">
+                <svg class="qr" viewBox="0 0 25 25" shape-rendering="crispEdges"><path stroke="currentColor" d="M0 0.5h7m1 0h4m2 0h1m1 0h1m1 0h7M0 1.5h1m5 0h1m1 0h2m6 0h1m1 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m1 0h2m3 0h1m1 0h2m1 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m3 0h4m1 0h1m2 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m1 0h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m2 0h3m1 0h1m4 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M11 7.5h1m1 0h1m2 0h1M0 8.5h1m2 0h6m2 0h2m1 0h4m2 0h1m1 0h3M0 9.5h2m5 0h2m1 0h1m1 0h4m3 0h5M0 10.5h1m1 0h1m1 0h3m1 0h4m1 0h1m1 0h1m3 0h3m2 0h1M1 11.5h1m3 0h1m1 0h1m4 0h1m1 0h1m2 0h1m2 0h5M0 12.5h3m3 0h1m2 0h2m1 0h1m3 0h1m1 0h2m4 0h1M0 13.5h1m1 0h2m3 0h2m5 0h4m2 0h1m2 0h1M0 14.5h4m1 0h3m1 0h7m1 0h2m1 0h5M0 15.5h1m1 0h1m1 0h2m1 0h2m1 0h2m7 0h1m1 0h2m1 0h1M0 16.5h1m1 0h1m2 0h3m6 0h7m1 0h2M8 17.5h2m1 0h3m2 0h1m3 0h1m1 0h2M0 18.5h7m1 0h2m1 0h1m4 0h1m1 0h1m1 0h1m3 0h1M0 19.5h1m5 0h1m1 0h2m2 0h1m1 0h3m3 0h1m2 0h2M0 20.5h1m1 0h3m1 0h1m1 0h3m1 0h9m2 0h2M0 21.5h1m1 0h3m1 0h1m1 0h2m4 0h1m1 0h3m4 0h2M0 22.5h1m1 0h3m1 0h1m2 0h2m1 0h1m1 0h1m2 0h1m2 0h5M0 23.5h1m5 0h1m2 0h2m3 0h2m1 0h1m1 0h2m1 0h3M0 24.5h7m1 0h3m2 0h2m1 0h1m1 0h1m2 0h1m2 0h1" /></svg>
+                <span class="pass-guest">Ada Lovelace</span>
+                <span class="pass-meta"><span class="chip chip-vip">VIP</span><code>EVT-41316E</code></span>
+              </div>
+            </div>
+
+            <div class="phone">
+              <div class="phone-screen">
+                <div class="phone-bar"><span>Summer Gala · Door A</span><span>312/450</span></div>
+                <div class="result result-go">
+                  <svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                  <strong>Welcome!</strong>
+                  <span>Ada Lovelace</span>
+                  <span class="result-sub">VIP · checked in 7:02 pm</span>
+                </div>
+                <div class="phone-btn">Scan next pass</div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
+      <!-- Features ------------------------------------------------------------------------------- -->
       <section id="features" class="section">
         <div class="wrap">
           <header class="section-head">
+            <p class="kicker">Features</p>
             <h2>Everything you need to run the door</h2>
             <p>One place for your guest list, invitations, passes and check-in, so your team is not juggling spreadsheets on the day.</p>
           </header>
@@ -132,7 +144,7 @@
             <article class="card">
               <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0M4 20a8 8 0 0 1 16 0M17 4h4M19 2v4" /></svg></div>
               <h3>Guest lists that stay tidy</h3>
-              <p>Add guests one by one or import a CSV. You see a preview with every problem row flagged before anything is saved. Tag VIPs, speakers, sponsors and more.</p>
+              <p>Add guests one by one or import a CSV. You see a preview with every problem row flagged before anything is saved. Keep your own guest IDs and notes, and tag VIPs, speakers and sponsors.</p>
             </article>
             <article class="card">
               <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2v2h-2zM18 14h2v2h-2z" /></svg></div>
@@ -147,12 +159,12 @@
             <article class="card">
               <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16" /></svg></div>
               <h3>Check-in in seconds</h3>
-              <p>Scan with the phone camera or search by name. A full-screen green, amber or red result tells staff exactly what to do. Each pass works only once.</p>
+              <p>Scan with the phone camera or search by name or guest ID. A full-screen green, amber or red result tells staff exactly what to do. Each pass works only once.</p>
             </article>
             <article class="card">
               <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg></div>
               <h3>Live dashboard and reports</h3>
-              <p>Watch arrivals as they happen, then download attendance, no-show and RSVP reports as CSV once the doors close.</p>
+              <p>Watch arrivals as they happen, then download attendance, no-show, RSVP and complete guest reports as spreadsheets once the doors close.</p>
             </article>
             <article class="card">
               <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0" /></svg></div>
@@ -163,11 +175,78 @@
         </div>
       </section>
 
+      <!-- At the door ------------------------------------------------------------------------------ -->
+      <section id="door" class="section section-ink">
+        <div class="wrap">
+          <header class="section-head section-head-left">
+            <p class="kicker">At the door</p>
+            <h2>Three colours. No guesswork.</h2>
+            <p>Every scan fills the screen with one clear answer, big enough to read at arm's length in a busy entrance.</p>
+          </header>
+          <div class="results">
+            <figure class="result-card result-go">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+              <figcaption>
+                <strong>Welcome!</strong>
+                <span>Valid pass, checked in. Let them in.</span>
+              </figcaption>
+            </figure>
+            <figure class="result-card result-wait">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v6M12 17h.01" /></svg>
+              <figcaption>
+                <strong>Already checked in</strong>
+                <span>Shows when and at which gate it was first used.</span>
+              </figcaption>
+            </figure>
+            <figure class="result-card result-stop">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>
+              <figcaption>
+                <strong>Not valid</strong>
+                <span>Cancelled, expired or for a different event.</span>
+              </figcaption>
+            </figure>
+          </div>
+          <p class="door-note">Two staff scanning the same pass at the same moment? Only one gets green. No pass on them? Search by name or guest ID instead.</p>
+        </div>
+      </section>
+
+      <!-- Brand + report --------------------------------------------------------------------------- -->
+      <section class="section">
+        <div class="wrap duo">
+          <article class="duo-item">
+            <p class="kicker">Your brand</p>
+            <h2>Your logo and colours on every pass</h2>
+            <p>Upload your logo and pick a brand colour once. Guests see them on their digital pass, the printable PDF, their pass page and the invitation email.</p>
+            <div class="brand-demo" aria-hidden="true">
+              <div class="mini-pass" style="--c: #1f5eff"><span class="mini-logo"></span><span class="mini-line"></span></div>
+              <div class="mini-pass" style="--c: #0f8a5f"><span class="mini-logo"></span><span class="mini-line"></span></div>
+              <div class="mini-pass" style="--c: #b4235a"><span class="mini-logo"></span><span class="mini-line"></span></div>
+              <div class="mini-pass" style="--c: #c26a00"><span class="mini-logo"></span><span class="mini-line"></span></div>
+            </div>
+          </article>
+          <article class="duo-item">
+            <p class="kicker">Reports</p>
+            <h2>One spreadsheet with everything</h2>
+            <p>Export one row per guest per pass: their ID, contact details and notes, with RSVP, invitation and check-in details side by side.</p>
+            <div class="sheet" role="img" aria-label="Example of the complete guest report">
+              <div class="sheet-grid">
+              <div class="sheet-row sheet-head"><span>Guest ID</span><span>Name</span><span>RSVP</span><span>Invitation</span><span>Checked in</span></div>
+              <div class="sheet-row"><span>M-0042</span><span>Ada Lovelace</span><span class="ok">Confirmed</span><span>Opened</span><span>7:02 pm</span></div>
+              <div class="sheet-row"><span>M-0107</span><span>Alan Turing</span><span class="ok">Confirmed</span><span>Opened</span><span>7:09 pm</span></div>
+              <div class="sheet-row"><span>M-0213</span><span>Grace Hopper</span><span>Pending</span><span>Sent</span><span>–</span></div>
+              <div class="sheet-row"><span>M-0318</span><span>Katherine Johnson</span><span class="no">Declined</span><span>Opened</span><span>–</span></div>
+            </div>
+              </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- How it works ----------------------------------------------------------------------------- -->
       <section id="how-it-works" class="section section-alt">
         <div class="wrap">
           <header class="section-head">
-            <h2>How it works</h2>
-            <p>Four steps from a new event to a busy front door.</p>
+            <p class="kicker">How it works</p>
+            <h2>Four steps from a new event to a busy front door</h2>
           </header>
           <ol class="steps">
             <li><span class="step-n" aria-hidden="true">1</span><h3>Create your event</h3><p>Add the date, venue and capacity, and choose who manages it.</p></li>
@@ -178,9 +257,11 @@
         </div>
       </section>
 
+      <!-- Privacy ---------------------------------------------------------------------------------- -->
       <section id="privacy" class="section">
         <div class="wrap split">
           <div>
+            <p class="kicker">Privacy</p>
             <h2>Your guests' details stay yours</h2>
             <p class="lead-sm">Guest lists hold names, emails and phone numbers. Inviteley is built so that information stays with the company it belongs to.</p>
           </div>
@@ -193,9 +274,11 @@
         </div>
       </section>
 
+      <!-- Plans ------------------------------------------------------------------------------------ -->
       <section id="plans" class="section section-alt">
         <div class="wrap">
           <header class="section-head">
+            <p class="kicker">Plans</p>
             <h2>Plans for every size of event</h2>
             <p>Every plan includes QR passes, email invitations, RSVP, check-in, the live dashboard and reports.</p>
           </header>
@@ -204,17 +287,18 @@
               <h3>Starter</h3>
               <p class="plan-for">For occasional events</p>
               <ul>
-                <li>Up to <strong>3</strong> active events</li>
-                <li>Up to <strong>500</strong> guests per event</li>
+                <li><strong>3</strong> active events</li>
+                <li><strong>500</strong> guests per event</li>
               </ul>
               <a class="btn btn-outline" href="/register">Request access</a>
             </article>
             <article class="card plan plan-featured">
+              <span class="plan-badge">500+ guests</span>
               <h3>Business</h3>
               <p class="plan-for">For teams running events all year</p>
               <ul>
-                <li>Up to <strong>50</strong> active events</li>
-                <li>Up to <strong>5,000</strong> guests per event</li>
+                <li><strong>50</strong> active events</li>
+                <li><strong>5,000</strong> guests per event</li>
               </ul>
               <a class="btn btn-primary" href="/register">Request access</a>
             </article>
@@ -231,9 +315,11 @@
         </div>
       </section>
 
+      <!-- FAQ (text matches the FAQPage structured data above) ------------------------------------- -->
       <section id="faq" class="section">
         <div class="wrap narrow">
           <header class="section-head">
+            <p class="kicker">FAQ</p>
             <h2>Frequently asked questions</h2>
           </header>
           <div class="faq">
@@ -267,8 +353,10 @@
 
       <section class="cta-band">
         <div class="wrap cta-band-inner">
-          <h2>Ready for a smoother front door?</h2>
-          <p>Request an account for your company. We will email you as soon as it is approved.</p>
+          <div>
+            <h2>Ready for a smoother front door?</h2>
+            <p>Request an account for your company. We will email you as soon as it is approved.</p>
+          </div>
           <a class="btn btn-light btn-lg" href="/register">Request access</a>
         </div>
       </section>
@@ -276,13 +364,18 @@
 
     <footer class="site-footer">
       <div class="wrap footer-row">
-        <p>&copy; <span data-year>2026</span> Inviteley</p>
+        <a class="brand brand-sm" href="/" aria-label="Inviteley home">
+          <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="currentColor" /><path d="M9 9h6v6H9zM17 9h6v6h-6zM9 17h6v6H9zM19 19h4v4h-4z" fill="#fff" /></svg>
+          <span>Inviteley</span>
+        </a>
         <nav aria-label="Footer">
           <a href="#features">Features</a>
+          <a href="#door">At the door</a>
           <a href="#plans">Plans</a>
           <a href="#faq">FAQ</a>
           <a href="/login">Sign in</a>
         </nav>
+        <p>&copy; <span data-year>2026</span> Inviteley</p>
       </div>
     </footer>
 
