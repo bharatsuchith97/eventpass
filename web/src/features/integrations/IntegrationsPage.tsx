@@ -10,7 +10,7 @@ export function IntegrationsPage() {
   const q = useQuery({ queryKey: ['integrations'], queryFn: async () => (await api<{ items: Integration[] }>('/integrations')).items });
   return (
     <>
-      <PageHeader title="Integrations" subtitle="Connect EventPass to the tools you already use" />
+      <PageHeader title="Integrations" subtitle="Connect Inviteley to the tools you already use" />
       <ErrorAlert error={q.error} onRetry={() => void q.refetch()} />
       <Stack gap={2} maxWidth={720}>
         {(q.data ?? []).map((i) => (

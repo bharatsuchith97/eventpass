@@ -1,6 +1,6 @@
 {
-  "name": "EventPass",
-  "short_name": "EventPass",
+  "name": "Inviteley",
+  "short_name": "Inviteley",
   "description": "Guest lists, QR passes and fast door check-in for your events.",
   "start_url": "/login",
   "scope": "/",

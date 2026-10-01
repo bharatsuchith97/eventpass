@@ -224,7 +224,7 @@ export function AdminConsolePage() {
       <AppBar position="static" color="inherit" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Toolbar sx={{ gap: 1 }}>
           <AdminPanelSettingsIcon color="primary" />
-          <Typography variant="h6" fontWeight={800} sx={{ flexGrow: 1 }}>EventPass admin</Typography>
+          <Typography variant="h6" fontWeight={800} sx={{ flexGrow: 1 }}>Inviteley admin</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>{admin?.email}</Typography>
           <Button onClick={() => logout.mutate()} disabled={logout.isPending}>Sign out</Button>
         </Toolbar>

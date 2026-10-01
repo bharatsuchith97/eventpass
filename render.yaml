@@ -24,7 +24,7 @@ services:
       - key: DATABASE_URL
         sync: false # Neon: the direct (not "-pooler") connection string, ending in ?sslmode=require
       - key: APP_URL
-        sync: false # https://your-domain (or the https://<name>.onrender.com URL until the domain is set up)
+        sync: false # https://inviteley.com (or the https://<name>.onrender.com URL until the domain is set up)
       - key: SUPERADMIN_EMAIL
         sync: false
       - key: SUPERADMIN_PASSWORD
@@ -32,4 +32,4 @@ services:
       - key: SMTP_URL
         sync: false
       - key: MAIL_FROM
-        sync: false # e.g. EventPass <no-reply@your-domain>
+        sync: false # e.g. Inviteley <no-reply@inviteley.com>

@@ -26,7 +26,7 @@ void (async () => {
     const cta = document.querySelector<HTMLAnchorElement>('[data-session="cta"]');
     if (cta) {
       cta.href = user.role === 'CHECKIN_STAFF' ? '/checkin' : '/dashboard';
-      cta.textContent = 'Open EventPass';
+      cta.textContent = 'Open Inviteley';
     }
     document.querySelector('[data-session="signin"]')?.remove();
   } catch {

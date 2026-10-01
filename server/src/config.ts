@@ -13,7 +13,7 @@ const schema = z.object({
   DB_POOL_MAX: z.coerce.number().int().positive().default(20),
   SESSION_HOURS: z.coerce.number().positive().default(8),
   SMTP_URL: z.string().optional(),
-  MAIL_FROM: z.string().default('EventPass <no-reply@eventpass.local>'),
+  MAIL_FROM: z.string().default('Inviteley <no-reply@inviteley.com>'),
   TRUST_PROXY: z.coerce.number().int().default(0),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).default('info'),
   /** Bootstrap superadmin, synced on every boot (changing the password here resets it). */

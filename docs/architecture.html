@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Published copy: https://claude.ai/artifact/7xqWwcGEMBzmfnhV2APXqB -->
-<title>EventPass Architecture</title>
+<title>Inviteley Architecture</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600&display=swap">
@@ -122,7 +122,7 @@ td.c { text-align: center; font-variant-numeric: tabular-nums; }
 <div class="page">
   <header>
     <div class="eyebrow">System architecture · as built</div>
-    <h1>EventPass Architecture</h1>
+    <h1>Inviteley Architecture</h1>
     <p class="lede">
       A multi-tenant event and QR check-in platform. All companies share one PostgreSQL database: every company-owned row carries a <code>company_id</code>, and every query is limited to the signed-in user's company.
       This sheet shows how a request is tied to one company, how companies are approved and created, how a scan becomes a check-in, and how the system is deployed.

@@ -1,4 +1,4 @@
-# EventPass
+# Inviteley
 
 Multi-tenant event management and QR check-in. All companies share **one PostgreSQL database**; every company-owned row carries `company_id`, every query is scoped to the company in the session, and composite foreign keys stop rows of different companies from being linked.
 

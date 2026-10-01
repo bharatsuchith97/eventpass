@@ -19,7 +19,7 @@ export async function startServer(): Promise<{ server: Server; stop: () => Promi
   const server = await new Promise<Server>((resolve) => {
     const s = app.listen(config().PORT, () => resolve(s));
   });
-  console.log(`EventPass API listening on :${config().PORT}`);
+  console.log(`Inviteley API listening on :${config().PORT}`);
   const stop = async () => {
     await new Promise<void>((r) => server.close(() => r()));
     await closePool();

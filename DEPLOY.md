@@ -1,6 +1,6 @@
-# Deploying EventPass
+# Deploying Inviteley
 
-Two ways to run EventPass in production:
+Two ways to run Inviteley in production:
 
 - **Option A: Render + Neon** (recommended). No server to look after: Render runs the app from the `Dockerfile`,
   Neon hosts the database. About $7/month for an always-on app; Neon's free tier is enough to start.
@@ -9,7 +9,7 @@ Two ways to run EventPass in production:
 
 Both need:
 - The code in a (private) GitHub repository.
-- A domain name, e.g. `events.example.com`.
+- A domain name, e.g. `inviteley.com`.
 - An email provider (Brevo, Resend, ...) with your domain verified. Free tiers allow only a few hundred emails a day,
   so for a large event (say 1,000 invitations) use a paid plan for that month or send over several days.
 
@@ -33,7 +33,7 @@ The app creates all its tables on first start; there is nothing to set up inside
 ## A2. Create the app (Render)
 
 1. Sign up at [render.com](https://render.com) and connect your GitHub account.
-2. **New → Blueprint**, choose the EventPass repository. Render reads `render.yaml` and asks for the values it
+2. **New → Blueprint**, choose the Inviteley repository. Render reads `render.yaml` and asks for the values it
    can't fill in itself:
 
    | Setting | Value |
@@ -45,7 +45,7 @@ The app creates all its tables on first start; there is nothing to set up inside
 
    `JWT_SECRET` is generated for you.
 3. **Apply.** The first build takes a few minutes. In the service's **Logs** you should see
-   `[migrate] applied 001`, `[superadmin] created …` and `EventPass API listening on :4000`.
+   `[migrate] applied 001`, `[superadmin] created …` and `Inviteley API listening on :4000`.
 4. Open the service's address (shown at the top of its page). If it differs from what you entered as `APP_URL`,
    correct `APP_URL` under **Environment**; Render redeploys automatically.
 5. **Turn on automatic deploys from GitHub.** `render.yaml` switches Render's own auto-deploy off, so that a push
@@ -58,10 +58,13 @@ The app creates all its tables on first start; there is nothing to set up inside
 
 ## A3. Use your own domain
 
-1. In the service: **Settings → Custom Domains → Add**, enter e.g. `events.example.com`.
-2. At your DNS provider, add the record Render shows (a `CNAME` to `<name>.onrender.com`).
-   Render issues the HTTPS certificate by itself once DNS has updated.
-3. Change `APP_URL` to `https://events.example.com`. Emailed links, the sitemap and the security checks use it.
+1. In the service: **Settings → Custom Domains → Add**, enter `inviteley.com`, then add `www.inviteley.com` too.
+2. At your domain registrar's DNS settings, add exactly the records Render shows for each. For the bare domain
+   (`inviteley.com`) that is usually an `A` record to an IP address (most registrars don't allow a `CNAME` there);
+   for `www` it is a `CNAME` to `<name>.onrender.com`. Remove any existing "parking" `A`/`CNAME` records for the
+   same names first. Render issues the HTTPS certificates by itself once DNS has updated (minutes to a few hours)
+   and redirects `www` to the bare domain.
+3. Change `APP_URL` to `https://inviteley.com`. Emailed links, the sitemap and the security checks use it.
 
 ## A4. Before the event
 
@@ -86,7 +89,7 @@ The app creates all its tables on first start; there is nothing to set up inside
 
 # Option B: a free Oracle Cloud VM
 
-This puts the whole stack on one server: **Caddy** (HTTPS) → **EventPass** (API + web) → **PostgreSQL**, all with
+This puts the whole stack on one server: **Caddy** (HTTPS) → **Inviteley** (API + web) → **PostgreSQL**, all with
 `docker compose`. It runs on Oracle Cloud's *Always Free* tier, but the same steps work on any Ubuntu server
 (Hetzner, DigitalOcean, Google Cloud e2-micro, ...), starting at step 3.
 
@@ -140,8 +143,8 @@ Do **not** open port 5432 (PostgreSQL) or 4000 (the app). Only Caddy should be r
 
 ## 3. Point your domain at the server
 
-At your DNS provider, create an **A record** for your domain (e.g. `events.example.com`) pointing to the VM's public IP.
-Wait until `ping events.example.com` shows that IP, because Caddy cannot get a certificate before then.
+At your DNS provider, create an **A record** for your domain (e.g. `inviteley.com`) pointing to the VM's public IP.
+Wait until `ping inviteley.com` shows that IP, because Caddy cannot get a certificate before then.
 
 ## 4. Install Docker
 
@@ -180,7 +183,7 @@ nano .env
 
 Fill in every empty value. Generate each secret with `openssl rand -hex 32`:
 
-- `DOMAIN`: e.g. `events.example.com` (no `https://`)
+- `DOMAIN`: e.g. `inviteley.com` (no `https://`)
 - `DB_PASSWORD`, `JWT_SECRET`: two different random values
 - `DATABASE_URL`: leave empty to use the bundled database, or paste a managed PostgreSQL connection string
 - `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD`: your platform admin login
@@ -195,7 +198,7 @@ docker compose up -d --build
 docker compose logs -f app
 ```
 
-You should see `[migrate] applied 001`, `[superadmin] created ...` and `EventPass API listening on :4000`.
+You should see `[migrate] applied 001`, `[superadmin] created ...` and `Inviteley API listening on :4000`.
 Press Ctrl+C to stop following the logs (the app keeps running).
 
 Open `https://<your-domain>`. The first visit can take a few seconds while Caddy gets the certificate.

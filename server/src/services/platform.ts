@@ -131,9 +131,9 @@ export async function approveRequest(admin: AdminCtx, id: string) {
   const link = `${config().APP_URL}/login`;
   await trySendMail({
     to: req.email,
-    subject: 'Your EventPass account is ready',
-    text: `Hi ${req.full_name},\n\nYour EventPass account for ${req.company_name} has been approved. Sign in with the email and password you chose:\n${link}\n`,
-    html: `<p>Hi ${escapeHtml(req.full_name)},</p><p>Your EventPass account for <b>${escapeHtml(req.company_name)}</b> has been approved. Sign in with the email and password you chose.</p><p><a href="${escapeHtml(link)}">Sign in</a></p>`,
+    subject: 'Your Inviteley account is ready',
+    text: `Hi ${req.full_name},\n\nYour Inviteley account for ${req.company_name} has been approved. Sign in with the email and password you chose:\n${link}\n`,
+    html: `<p>Hi ${escapeHtml(req.full_name)},</p><p>Your Inviteley account for <b>${escapeHtml(req.company_name)}</b> has been approved. Sign in with the email and password you chose.</p><p><a href="${escapeHtml(link)}">Sign in</a></p>`,
   });
   return { id, status: 'APPROVED' as const, companyId };
 }
@@ -152,9 +152,9 @@ export async function rejectRequest(admin: AdminCtx, id: string, input: unknown)
   const why = reason ? `\n\nReason: ${reason}` : '';
   await trySendMail({
     to: req.email,
-    subject: 'Your EventPass request',
-    text: `Hi ${req.full_name},\n\nYour request for an EventPass account for ${req.company_name} was not approved.${why}\n`,
-    html: `<p>Hi ${escapeHtml(req.full_name)},</p><p>Your request for an EventPass account for <b>${escapeHtml(req.company_name)}</b> was not approved.</p>${reason ? `<p>Reason: ${escapeHtml(reason)}</p>` : ''}`,
+    subject: 'Your Inviteley request',
+    text: `Hi ${req.full_name},\n\nYour request for an Inviteley account for ${req.company_name} was not approved.${why}\n`,
+    html: `<p>Hi ${escapeHtml(req.full_name)},</p><p>Your request for an Inviteley account for <b>${escapeHtml(req.company_name)}</b> was not approved.</p>${reason ? `<p>Reason: ${escapeHtml(reason)}</p>` : ''}`,
   });
   return { id, status: 'REJECTED' as const };
 }

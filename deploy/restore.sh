@@ -9,7 +9,7 @@ src="${1:?usage: deploy/restore.sh <backup directory>}"
 gzip -t "$src/database.sql.gz"
 cd "$(dirname "$0")/.."
 
-echo "This replaces ALL EventPass data on this server with the backup in $src."
+echo "This replaces ALL Inviteley data on this server with the backup in $src."
 read -r -p "Type 'restore' to continue: " answer
 [ "$answer" = "restore" ] || { echo "Cancelled."; exit 1; }
 
@@ -23,4 +23,4 @@ gunzip -c "$src/database.sql.gz" | docker compose exec -T db psql -q -v ON_ERROR
 
 echo "Starting everything..."
 docker compose up -d
-echo "Done. Check: docker compose logs -f app   (it should say 'EventPass API listening')"
+echo "Done. Check: docker compose logs -f app   (it should say 'Inviteley API listening')"

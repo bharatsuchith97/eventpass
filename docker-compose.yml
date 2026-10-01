@@ -1,4 +1,4 @@
-# Production stack: Caddy (HTTPS) -> EventPass (API + web) -> PostgreSQL. Copy .env.example to .env first.
+# Production stack: Caddy (HTTPS) -> Inviteley (API + web) -> PostgreSQL. Copy .env.example to .env first.
 # Only Caddy is reachable from outside; the app and the database stay on the internal Docker network.
 # To use a managed PostgreSQL (Supabase, Neon, ...) instead of the db container, set DATABASE_URL in .env;
 # the db container then simply sits unused.

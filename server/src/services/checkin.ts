@@ -137,7 +137,7 @@ async function performCheckIn(
 export async function scanCheckIn(ctx: Ctx, input: unknown) {
   const d = parse(scanSchema, input);
   const token = extractToken(d.token);
-  if (!token) throw reject(ctx, 'INVALID_TICKET', 404, 'This is not an EventPass QR code', null);
+  if (!token) throw reject(ctx, 'INVALID_TICKET', 404, 'This is not an Inviteley QR code', null);
   return performCheckIn(ctx, { by: 'token', hash: sha256Hex(token) }, { eventId: d.eventId, gate: d.gate, deviceId: d.deviceId, method: 'QR' });
 }
 

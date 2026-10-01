@@ -67,7 +67,7 @@ export function AppShell() {
         <Box sx={{ width: 30, height: 30, borderRadius: 1.5, bgcolor: 'primary.main', display: 'grid', placeItems: 'center' }}>
           <QrCodeScannerIcon sx={{ color: '#fff', fontSize: 20 }} />
         </Box>
-        <Typography variant="h6" fontWeight={800}>EventPass</Typography>
+        <Typography variant="h6" fontWeight={800}>Inviteley</Typography>
       </Toolbar>
       <Divider />
       <List sx={{ px: 1 }}>

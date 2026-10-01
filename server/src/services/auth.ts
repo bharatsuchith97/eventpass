@@ -84,12 +84,12 @@ export async function register(input: unknown): Promise<{ requestId: string }> {
   await notifySuperadmins(d.companyName, d.fullName, d.email);
   await trySendMail({
     to: d.email,
-    subject: 'We received your EventPass request',
+    subject: 'We received your Inviteley request',
     text: `Hi ${d.fullName},
 
-Thanks for requesting an EventPass account for ${d.companyName}. We will email you as soon as it has been reviewed.
+Thanks for requesting an Inviteley account for ${d.companyName}. We will email you as soon as it has been reviewed.
 `,
-    html: `<p>Hi ${escapeHtml(d.fullName)},</p><p>Thanks for requesting an EventPass account for <b>${escapeHtml(d.companyName)}</b>. We will email you as soon as it has been reviewed.</p>`,
+    html: `<p>Hi ${escapeHtml(d.fullName)},</p><p>Thanks for requesting an Inviteley account for <b>${escapeHtml(d.companyName)}</b>. We will email you as soon as it has been reviewed.</p>`,
   });
   return { requestId };
 }
@@ -100,7 +100,7 @@ async function notifySuperadmins(companyName: string, fullName: string, email: s
   for (const a of admins.rows) {
     await trySendMail({
       to: a.email,
-      subject: `New EventPass company request: ${companyName}`,
+      subject: `New Inviteley company request: ${companyName}`,
       text: `${fullName} <${email}> asked for a company account for ${companyName}.
 
 Review it: ${link}
@@ -241,7 +241,7 @@ export async function requestPasswordReset(input: unknown): Promise<void> {
   const link = `${config().APP_URL}/reset-password?token=${raw}`;
   await sendMail({
     to: email,
-    subject: 'Reset your EventPass password',
+    subject: 'Reset your Inviteley password',
     text: `Use this link within one hour to reset your password:\n${link}\n\nIf you did not request this, ignore this email.`,
     html: `<p>Use this link within one hour to reset your password:</p><p><a href="${escapeHtml(link)}">Reset password</a></p><p>If you did not request this, ignore this email.</p>`,
   });

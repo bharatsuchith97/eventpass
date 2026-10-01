@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Back up the EventPass database (every company lives in it) as databases.sql.gz.
+# Back up the Inviteley database (every company lives in it) as database.sql.gz.
 # Only needed for the bundled PostgreSQL container; managed services (Supabase, Neon, ...) have their own backups.
 #
 # Usage (from anywhere):      deploy/backup.sh

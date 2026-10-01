@@ -22,7 +22,7 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
           <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: 'primary.main', display: 'grid', placeItems: 'center' }}>
             <QrCodeScannerIcon sx={{ color: '#fff' }} />
           </Box>
-          <Typography variant="h5" fontWeight={800}>EventPass</Typography>
+          <Typography variant="h5" fontWeight={800}>Inviteley</Typography>
         </Stack>
         <Card variant="outlined">
           <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>

@@ -1,6 +1,6 @@
-# EventPass technical reference
+# Inviteley technical reference
 
-Everything about how EventPass is built, in one place: what each part does, the rules the code enforces, and where to find it.
+Everything about how Inviteley is built, in one place: what each part does, the rules the code enforces, and where to find it.
 For the diagrams (deployment, request path, approval flow, check-in, data layout, backups), open [architecture.html](architecture.html) in a browser.
 
 **Contents:** [What it is](#1-what-it-is) · [Tech stack](#2-tech-stack) · [Repository layout](#3-repository-layout) · [Running it](#4-running-it) · [Configuration](#5-configuration) · [Multi-tenancy](#6-multi-tenancy-one-database-per-company) · [Sign-in and sessions](#7-sign-in-and-sessions) · [Permissions](#8-permissions-and-plan-limits) · [Data model](#9-data-model) · [Business rules](#10-business-rules) · [API reference](#11-api-reference) · [Web app](#12-web-app) · [Security](#13-security-controls) · [Email](#14-email) · [Tests](#15-tests) · [Build and deploy](#16-build-and-deploy) · [Limits and gaps](#17-limits-and-known-gaps) · [Where to change things](#18-where-to-change-things)
@@ -9,7 +9,7 @@ For the diagrams (deployment, request path, approval flow, check-in, data layout
 
 ## 1. What it is
 
-EventPass is a multi-tenant web app for running events: guest lists, QR passes, email invitations, RSVP, door check-in and attendance reports.
+Inviteley is a multi-tenant web app for running events: guest lists, QR passes, email invitations, RSVP, door check-in and attendance reports.
 
 - **Multi-tenant** means many companies use one installation. All companies share **one PostgreSQL database**: every company-owned row has a `company_id`, and every query is limited to the company of the signed-in user.
 - New companies **request access** and a **platform superadmin approves** them at `/admin`. The company account is created at approval time.
@@ -176,7 +176,7 @@ Validated at startup by `server/src/config.ts`; a missing or invalid value stops
 | `DB_POOL_MAX` | `20` | Maximum database connections |
 | `SESSION_HOURS` | `8` | Session length |
 | `SMTP_URL` | empty | SMTP connection URL; empty = emails are not sent (printed in development) |
-| `MAIL_FROM` | `EventPass <no-reply@eventpass.local>` | Sender address |
+| `MAIL_FROM` | `Inviteley <no-reply@inviteley.com>` | Sender address |
 | `TRUST_PROXY` | `0` | Number of proxies in front (1 behind Caddy) so client IPs are right for rate limits |
 | `LOG_LEVEL` | `info` | `silent` in tests |
 | `SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD` | empty | Bootstrap superadmin, created or updated on every boot (both or neither; password 12+ chars) |
@@ -426,7 +426,7 @@ All routes are under `/api`. Every `POST`/`PUT`/`PATCH`/`DELETE` must send the h
 - **Forms** use React Hook Form with Zod schemas (`src/lib/validation/schemas.ts`); server-side field errors are mapped back onto the form fields.
 - **Scanner** (`components/ui/Scanner.tsx`) reads the phone camera and decodes QR codes with jsQR. The selected event, gate and a random device id are remembered per phone (Zustand, localStorage). Camera access needs HTTPS or localhost.
 - **Theming**: MUI theme, primary colour taken from the company's brand colour setting; dates shown in the company's timezone.
-- **Installable**: `manifest.webmanifest` lets staff add EventPass to a phone home screen. There is no offline mode (no service worker).
+- **Installable**: `manifest.webmanifest` lets staff add Inviteley to a phone home screen. There is no offline mode (no service worker).
 
 ## 13. Security controls
 
