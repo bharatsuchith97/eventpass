@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Published copy: https://claude.ai/artifact/7xqWwcGEMBzmfnhV2APXqB -->
+<title>EventPass Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: an engineering reference sheet. One reading column; each figure gets the full width and scrolls sideways on its own at phone width. */
+:root {
+  --bg: #f4f6f8; --surface: #ffffff; --group: #eaeff4; --fg: #15202b; --muted: #56657a; --line: #b3bfcc;
+  --accent: #1565c0; --accent-soft: #e2edfa;
+  --ok: #2e7d32; --ok-soft: #e4f1e5; --warn: #a85400; --warn-soft: #fbeedd; --bad: #c62828; --bad-soft: #fbe6e6;
+  --display: 'Archivo', 'Arial Narrow', system-ui, sans-serif;
+  --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151c; --surface: #16202a; --group: #121b24; --fg: #e3eaf2; --muted: #9babbd; --line: #3b4b5d;
+    --accent: #6aa8f0; --accent-soft: #15304f;
+    --ok: #6cc070; --ok-soft: #16311f; --warn: #f0a24f; --warn-soft: #3a2a14; --bad: #f07272; --bad-soft: #3d1c1f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151c; --surface: #16202a; --group: #121b24; --fg: #e3eaf2; --muted: #9babbd; --line: #3b4b5d;
+  --accent: #6aa8f0; --accent-soft: #15304f;
+  --ok: #6cc070; --ok-soft: #16311f; --warn: #f0a24f; --warn-soft: #3a2a14; --bad: #f07272; --bad-soft: #3d1c1f;
+  color-scheme: dark;
+}
+
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--sans); }
+.page { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; }
+h1, h2 { font-family: var(--display); text-wrap: balance; letter-spacing: -0.01em; line-height: 1.15; }
+h1 { font-size: clamp(2rem, 3vw + 1rem, 2.9rem); font-weight: 800; margin: 0 0 12px; }
+h2 { font-size: 1.55rem; font-weight: 700; margin: 0 0 6px; }
+h3 { font-size: 1rem; margin: 22px 0 6px; }
+p { margin: 0 0 12px; max-width: 72ch; }
+code, .mono { font-family: var(--mono); font-size: .88em; }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+.eyebrow { font: 500 .78rem var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--accent); margin-bottom: 10px; }
+.lede { font-size: 1.08rem; color: var(--muted); max-width: 70ch; }
+.stack { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 8px; padding: 0; list-style: none; }
+.stack li { font: .82rem var(--mono); padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.toc { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 24px 0 0; padding: 14px 0 0; border-top: 1px solid var(--line); font-size: .92rem; }
+.toc a { text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+
+section { margin-top: 56px; scroll-margin-top: 16px; }
+.sec-num { font: 500 .8rem var(--mono); color: var(--muted); margin-bottom: 4px; }
+.intro { color: var(--muted); }
+
+figure { margin: 18px 0 0; }
+.fig-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+.fig-scroll svg { display: block; width: 100%; min-width: 920px; height: auto; }
+figcaption { font-size: .9rem; color: var(--muted); margin-top: 10px; max-width: 80ch; }
+
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 16px; }
+.note { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; font-size: .92rem; }
+.note b { display: block; margin-bottom: 4px; }
+.note p { margin: 0; color: var(--muted); }
+
+.table-wrap { overflow-x: auto; margin-top: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font-weight: 600; background: var(--group); white-space: nowrap; }
+td code { white-space: nowrap; }
+td.c { text-align: center; font-variant-numeric: tabular-nums; }
+.yes { color: var(--ok); font-weight: 600; }
+.no { color: var(--muted); }
+.step { font: 600 .85rem var(--mono); color: var(--accent); white-space: nowrap; }
+.bad { color: var(--bad); font-weight: 600; }
+
+/* SVG diagram vocabulary (styled from the page so both themes work) */
+.dg { color: var(--muted); }
+.dg .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+.dg .grp { fill: var(--group); stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.dg .acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.4; }
+.dg .okb { fill: var(--ok-soft); stroke: var(--ok); stroke-width: 1.4; }
+.dg .warnb { fill: var(--warn-soft); stroke: var(--warn); stroke-width: 1.4; }
+.dg .badb { fill: var(--bad-soft); stroke: var(--bad); stroke-width: 1.4; }
+.dg .ghost { fill: none; stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 4 4; }
+.dg .t { fill: var(--fg); font: 600 13px var(--sans); }
+.dg .th { fill: var(--fg); font: 700 14px var(--sans); }
+.dg .s { fill: var(--muted); font: 11.5px var(--mono); }
+.dg .sf { fill: var(--fg); font: 500 12px var(--mono); }
+.dg .lbl { fill: var(--muted); font: 11px var(--mono); }
+.dg .lbl-acc { fill: var(--accent); font: 500 11px var(--mono); }
+.dg .lbl-bad { fill: var(--bad); font: 500 11px var(--mono); }
+.dg .lbl-warn { fill: var(--warn); font: 500 11px var(--mono); }
+.dg .t-ok { fill: var(--ok); font: 700 13px var(--sans); }
+.dg .t-warn { fill: var(--warn); font: 700 12.5px var(--mono); }
+.dg .t-bad { fill: var(--bad); font: 700 12.5px var(--mono); }
+.dg .edge { fill: none; stroke: currentColor; stroke-width: 1.4; }
+.dg .edge-acc { fill: none; stroke: var(--accent); stroke-width: 1.6; }
+.dg .edge-bad { fill: none; stroke: var(--bad); stroke-width: 1.3; stroke-dasharray: 4 3; }
+.dg .edge-warn { fill: none; stroke: var(--warn); stroke-width: 1.4; stroke-dasharray: 5 4; }
+.dg .edge-ok { fill: none; stroke: var(--ok); stroke-width: 1.6; }
+.dg .edge-dash { fill: none; stroke: currentColor; stroke-width: 1.3; stroke-dasharray: 4 3; }
+.dg .rowline { stroke: var(--line); stroke-width: 1; }
+.dg .head { fill: currentColor; }
+.dg .head-acc { fill: var(--accent); }
+.dg .head-bad { fill: var(--bad); }
+.dg .head-warn { fill: var(--warn); }
+.dg .head-ok { fill: var(--ok); }
+
+@media (max-width: 600px) {
+  .page { padding-block: 24px 56px; padding-inline: 16px; }
+  section { margin-top: 44px; }
+}
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="eyebrow">System architecture · as built</div>
+    <h1>EventPass Architecture</h1>
+    <p class="lede">
+      A multi-tenant event and QR check-in platform. All companies share one PostgreSQL database: every company-owned row carries a <code>company_id</code>, and every query is limited to the signed-in user's company.
+      This sheet shows how a request is tied to one company, how companies are approved and created, how a scan becomes a check-in, and how the system is deployed.
+    </p>
+    <ul class="stack" aria-label="Technology stack">
+      <li>React 18 · MUI · TanStack Query</li>
+      <li>Static landing page (no JS needed)</li>
+      <li>Express · TypeScript (strict) · Zod</li>
+      <li>PostgreSQL 17 · one shared database</li>
+      <li>Caddy · automatic HTTPS</li>
+      <li>Docker Compose on one VM</li>
+    </ul>
+    <nav class="toc" aria-label="Sections">
+      <a href="#deployment">1 · Deployment</a>
+      <a href="#request">2 · Request path</a>
+      <a href="#sessions">3 · Two kinds of session</a>
+      <a href="#approval">4 · Signup approval</a>
+      <a href="#creating">5 · Creating a company</a>
+      <a href="#checkin">6 · QR check-in</a>
+      <a href="#data">7 · Keeping companies apart</a>
+      <a href="#roles">8 · Roles</a>
+      <a href="#backups">9 · Backups</a>
+      <a href="#code">10 · Code map</a>
+    </nav>
+  </header>
+
+  <!-- 1 ─────────────────────────────────────────────────────────────── -->
+  <section id="deployment">
+    <div class="sec-num">01</div>
+    <h2>Deployment</h2>
+    <p class="intro">Three containers on one server. Only Caddy is reachable from the internet; the app and the database talk on Docker's internal network.</p>
+    <figure>
+      <div class="fig-scroll">
+        <svg class="dg" viewBox="0 0 1120 580" role="img" aria-label="All traffic enters through Caddy on port 443, which proxies to the Express app on port 4000. The app serves the landing page and the React app, runs the API, and uses one connection pool to a single shared PostgreSQL database that holds platform tables and company tables keyed by company_id. It sends email through an external SMTP provider.">
+          <defs>
+            <marker id="h1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0 0L10 5L0 10z"/></marker>
+            <marker id="h1a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-acc" d="M0 0L10 5L0 10z"/></marker>
+          </defs>
+
+          <!-- clients -->
+          <text class="lbl" x="20" y="28">WHO CONNECTS</text>
+          <rect class="box" x="20" y="40" width="210" height="54" rx="8"/>
+          <text class="t" x="34" y="62">Visitors &amp; search engines</text>
+          <text class="s" x="34" y="81">/  robots.txt  sitemap</text>
+          <rect class="box" x="20" y="108" width="210" height="54" rx="8"/>
+          <text class="t" x="34" y="130">Company team</text>
+          <text class="s" x="34" y="149">/dashboard /events …</text>
+          <rect class="box" x="20" y="176" width="210" height="54" rx="8"/>
+          <text class="t" x="34" y="198">Door staff phones</text>
+          <text class="s" x="34" y="217">/checkin  camera + search</text>
+          <rect class="box" x="20" y="244" width="210" height="54" rx="8"/>
+          <text class="t" x="34" y="266">Guests</text>
+          <text class="s" x="34" y="285">/pass/:slug/:token</text>
+          <rect class="box" x="20" y="312" width="210" height="54" rx="8"/>
+          <text class="t" x="34" y="334">Platform superadmin</text>
+          <text class="s" x="34" y="353">/admin</text>
+
+          <!-- bus to caddy -->
+          <path class="edge" d="M230 67H250M230 135H250M230 203H250M230 271H250M230 339H250M250 67V339"/>
+          <path class="edge" d="M250 203H268" marker-end="url(#h1)"/>
+
+          <!-- caddy -->
+          <rect class="acc" x="270" y="150" width="140" height="106" rx="8"/>
+          <text class="th" x="284" y="174">Caddy</text>
+          <text class="s" x="284" y="194">:443 HTTPS</text>
+          <text class="s" x="284" y="211">Let's Encrypt</text>
+          <text class="s" x="284" y="228">:80 → https</text>
+          <text class="s" x="284" y="245">gzip · zstd</text>
+
+          <path class="edge-acc" d="M410 203H468" marker-end="url(#h1a)"/>
+          <text class="lbl-acc" x="440" y="195" text-anchor="middle">:4000</text>
+
+          <!-- app container -->
+          <rect class="grp" x="470" y="24" width="320" height="452" rx="10"/>
+          <text class="th" x="486" y="48">app container</text>
+          <text class="s" x="486" y="66">node:22 · Express · port 4000</text>
+
+          <rect class="box" x="486" y="80" width="288" height="70" rx="7"/>
+          <text class="t" x="500" y="101">Web pages</text>
+          <text class="s" x="500" y="120">/  → index.html  indexable</text>
+          <text class="s" x="500" y="137">*  → app.html    noindex</text>
+
+          <rect class="acc" x="486" y="164" width="288" height="96" rx="7"/>
+          <text class="t" x="500" y="185">/api · CSRF · helmet · rate limits</text>
+          <text class="s" x="500" y="205">public  /auth/*  /public/pass</text>
+          <text class="s" x="500" y="223">company authenticate → RBAC</text>
+          <text class="s" x="500" y="241">admin   authenticateAdmin</text>
+
+          <rect class="box" x="486" y="274" width="288" height="74" rx="7"/>
+          <text class="t" x="500" y="295">services/ (all business logic)</text>
+          <text class="s" x="500" y="314">auth tenants platform events</text>
+          <text class="s" x="500" y="331">guests tickets checkin reports</text>
+
+          <rect class="box" x="486" y="362" width="288" height="100" rx="7"/>
+          <text class="t" x="500" y="384">db/pools.ts</text>
+          <text class="s" x="500" y="404">pool()  one pool, max 20</text>
+          <text class="s" x="500" y="425">every query filters by</text>
+          <text class="s" x="500" y="446">company_id = ctx.companyId</text>
+
+          <!-- db container -->
+          <rect class="grp" x="880" y="24" width="220" height="452" rx="10"/>
+          <text class="th" x="896" y="48">db container</text>
+          <text class="s" x="896" y="66">postgres:17 · no public port</text>
+
+          <rect class="acc" x="896" y="80" width="188" height="382" rx="7"/>
+          <text class="t" x="910" y="101">eventpass (one DB)</text>
+          <text class="lbl" x="910" y="124">PLATFORM</text>
+          <text class="s" x="910" y="142">companies · plans</text>
+          <text class="s" x="910" y="158">platform_admins</text>
+          <text class="s" x="910" y="174">company_requests</text>
+          <text class="s" x="910" y="190">auth_credentials</text>
+          <line class="rowline" x1="896" y1="206" x2="1084" y2="206"/>
+          <text class="lbl" x="910" y="226">PER COMPANY · company_id</text>
+          <text class="s" x="910" y="244">users</text>
+          <text class="s" x="910" y="260">company_settings</text>
+          <text class="s" x="910" y="276">events · managers</text>
+          <text class="s" x="910" y="292">guests</text>
+          <text class="s" x="910" y="308">tickets · invitations</text>
+          <text class="s" x="910" y="324">checkins</text>
+          <text class="s" x="910" y="340">audit_logs</text>
+          <line class="rowline" x1="896" y1="358" x2="1084" y2="358"/>
+          <text class="lbl" x="910" y="378">COMPOSITE FOREIGN KEYS</text>
+          <text class="s" x="910" y="396">(company_id, id) on</text>
+          <text class="s" x="910" y="412">every company table</text>
+
+          <!-- pool edge -->
+          <path class="edge" d="M774 404H894" marker-end="url(#h1)"/>
+
+          <!-- smtp -->
+          <path class="edge" d="M486 311H450V531H232" marker-end="url(#h1)"/>
+          <text class="lbl" x="440" y="522" text-anchor="end">invitations · approvals · resets</text>
+          <rect class="box" x="20" y="500" width="210" height="62" rx="8"/>
+          <text class="t" x="34" y="523">SMTP provider</text>
+          <text class="s" x="34" y="543">Brevo · Resend · …</text>
+        </svg>
+      </div>
+      <figcaption>Every request enters through Caddy. The app is the only thing that talks to PostgreSQL. Setting <code>DATABASE_URL</code> swaps the bundled database container for a managed PostgreSQL (Supabase, Neon, Render) without code changes.</figcaption>
+    </figure>
+    <div class="notes">
+      <div class="note"><b>Why one shared database</b><p>For the MVP it keeps deployment simple: any PostgreSQL works with no special permissions, there is one schema to migrate and one dump to back up.</p></div>
+      <div class="note"><b>How companies stay apart</b><p>The company comes only from the session, every query filters by it, and composite foreign keys stop rows of two companies from being linked. Row-level security is the next hardening step.</p></div>
+      <div class="note"><b>One port, two kinds of page</b><p>The landing page is plain HTML for search engines. Every other route gets the React shell with <code>X-Robots-Tag: noindex</code>, because pass and check-in links carry secret tokens.</p></div>
+    </div>
+  </section>
+
+  <!-- 2 ─────────────────────────────────────────────────────────────── -->
+  <section id="request">
+    <div class="sec-num">02</div>
+    <h2>How a request is tied to one company</h2>
+    <p class="intro">The company is never read from the request. It comes from the session, in one lookup, and every query afterwards is filtered by it.</p>
+    <figure>
+      <div class="fig-scroll">
+        <svg class="dg" viewBox="0 0 1120 310" role="img" aria-label="A company request passes four checks in order: session cookie, JWT verification, one lookup of the user, their company and plan, and the route permission check. Failures return 401 or 403. On success the handler runs SQL that is filtered by the session's company id, against the one shared database.">
+          <defs>
+            <marker id="h2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0 0L10 5L0 10z"/></marker>
+            <marker id="h2b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-bad" d="M0 0L10 5L0 10z"/></marker>
+            <marker id="h2a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-acc" d="M0 0L10 5L0 10z"/></marker>
+          </defs>
+
+          <!-- failures -->
+          <rect class="badb" x="20" y="24" width="414" height="40" rx="7"/>
+          <text class="t-bad" x="227" y="49" text-anchor="middle">401 · missing, forged or stale session</text>
+          <rect class="badb" x="464" y="24" width="192" height="40" rx="7"/>
+          <text class="t-bad" x="560" y="49" text-anchor="middle">403 · user/company off</text>
+          <rect class="badb" x="686" y="24" width="192" height="40" rx="7"/>
+          <text class="t-bad" x="782" y="49" text-anchor="middle">403 · FORBIDDEN</text>
+          <path class="edge-bad" d="M116 120V66M338 120V66M560 120V66M782 120V66" marker-end="url(#h2b)"/>
+
+          <!-- steps -->
+          <rect class="box" x="20" y="120" width="192" height="76" rx="8"/>
+          <text class="t" x="34" y="144">Session cookie</text>
+          <text class="s" x="34" y="164">ep_session</text>
+          <text class="s" x="34" y="181">HttpOnly · Strict</text>
+
+          <rect class="box" x="242" y="120" width="192" height="76" rx="8"/>
+          <text class="t" x="256" y="144">Verify JWT</text>
+          <text class="s" x="256" y="164">HS256 · no aud</text>
+          <text class="s" x="256" y="181">pv = password ver.</text>
+
+          <rect class="box" x="464" y="120" width="192" height="76" rx="8"/>
+          <text class="t" x="478" y="144">One lookup</text>
+          <text class="s" x="478" y="164">user + company</text>
+          <text class="s" x="478" y="181">+ plan, statuses</text>
+
+          <rect class="box" x="686" y="120" width="192" height="76" rx="8"/>
+          <text class="t" x="700" y="144">Permission</text>
+          <text class="s" x="700" y="164">requirePermission</text>
+          <text class="s" x="700" y="181">(role, action)</text>
+
+          <rect class="acc" x="908" y="120" width="192" height="76" rx="8"/>
+          <text class="t" x="922" y="144">handler(ctx)</text>
+          <text class="s" x="922" y="164">SQL filtered by</text>
+          <text class="s" x="922" y="181">ctx.companyId</text>
+
+          <path class="edge" d="M212 158H240M434 158H462M656 158H684" marker-end="url(#h2)"/>
+          <path class="edge-acc" d="M878 158H906" marker-end="url(#h2a)"/>
+
+          <!-- store -->
+          <path class="edge-dash" d="M560 196V248M1004 196V248"/>
+          <rect class="grp" x="464" y="250" width="636" height="46" rx="7"/>
+          <text class="sf" x="782" y="278" text-anchor="middle">eventpass database (shared by all companies)</text>
+        </svg>
+      </div>
+      <figcaption>Every company request runs these checks (<code>middleware/http.ts</code> → <code>services/auth.ts</code> <code>loadContext</code>). Changing a password bumps the version stored in the token (<code>pv</code>), so every other session fails at step two. Disabling a user or suspending a company takes effect on the next request.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 3 ─────────────────────────────────────────────────────────────── -->
+  <section id="sessions">
+    <div class="sec-num">03</div>
+    <h2>Two kinds of session</h2>
+    <p class="intro">Superadmins run the platform; company users run events. They never share a cookie or a token, and a superadmin never gets access to a company's data.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th>Company user</th><th>Platform superadmin</th></tr></thead>
+        <tbody>
+          <tr><td>Stored in</td><td><code>users</code> (with <code>company_id</code>) + <code>auth_credentials</code></td><td><code>platform_admins</code></td></tr>
+          <tr><td>Cookie</td><td><code>ep_session</code></td><td><code>ep_admin</code></td></tr>
+          <tr><td>Token</td><td>HS256 JWT, <b>no</b> audience</td><td>HS256 JWT, audience <code>platform-admin</code></td></tr>
+          <tr><td>Routes</td><td><code>/api/*</code></td><td><code>/api/admin/*</code> (never falls through to company routes)</td></tr>
+          <tr><td>Other token presented</td><td class="bad">401: a token with an audience is refused</td><td class="bad">401: wrong audience</td></tr>
+          <tr><td>Can read events and guests</td><td class="yes">Own company only</td><td class="no">No</td></tr>
+          <tr><td>Created by</td><td>Superadmin approval (first admin), then company admins</td><td><code>SUPERADMIN_EMAIL</code> / <code>SUPERADMIN_PASSWORD</code>, synced on every boot</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:12px;color:var(--muted);font-size:.92rem">Both cookies are <code>HttpOnly</code>, <code>SameSite=Strict</code> and <code>Secure</code> in production. Every state-changing request also needs the <code>X-Requested-With: eventpass</code> header and a matching <code>Origin</code>.</p>
+  </section>
+
+  <!-- 4 ─────────────────────────────────────────────────────────────── -->
+  <section id="approval">
+    <div class="sec-num">04</div>
+    <h2>Signup approval</h2>
+    <p class="intro">Signing up only files a request. No company exists and nobody can sign in until a superadmin approves it.</p>
+    <figure>
+      <div class="fig-scroll">
+        <svg class="dg" viewBox="0 0 1120 290" role="img" aria-label="A visitor's signup creates a pending request with no company. A superadmin either rejects it, which wipes the stored password hash, or approves it: one transaction claims the request and creates the company, which becomes active. If anything fails the transaction rolls back and the request stays pending. Active companies can be suspended and reactivated.">
+          <defs>
+            <marker id="h4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0 0L10 5L0 10z"/></marker>
+            <marker id="h4w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-warn" d="M0 0L10 5L0 10z"/></marker>
+            <marker id="h4b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-bad" d="M0 0L10 5L0 10z"/></marker>
+            <marker id="h4o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-ok" d="M0 0L10 5L0 10z"/></marker>
+          </defs>
+
+          <rect class="box" x="20" y="60" width="150" height="64" rx="8"/>
+          <text class="t" x="34" y="84">Visitor</text>
+          <text class="s" x="34" y="102">/register form</text>
+
+          <rect class="acc" x="300" y="60" width="190" height="64" rx="8"/>
+          <text class="t" x="314" y="84">PENDING request</text>
+          <text class="s" x="314" y="102">company_requests</text>
+          <text class="s" x="314" y="117">no company yet</text>
+
+          <rect class="box" x="610" y="60" width="190" height="64" rx="8"/>
+          <text class="t" x="624" y="84">Approve: one tx</text>
+          <text class="s" x="624" y="102">claim the request,</text>
+          <text class="s" x="624" y="117">create the company</text>
+
+          <rect class="okb" x="900" y="60" width="200" height="64" rx="8"/>
+          <text class="t" x="914" y="84">Company ACTIVE</text>
+          <text class="s" x="914" y="102">company + first admin</text>
+          <text class="s" x="914" y="117">owner can sign in</text>
+
+          <rect class="badb" x="300" y="210" width="190" height="64" rx="8"/>
+          <text class="t" x="314" y="234">REJECTED</text>
+          <text class="s" x="314" y="252">reason emailed</text>
+          <text class="s" x="314" y="267">password hash wiped</text>
+
+          <rect class="warnb" x="900" y="210" width="200" height="64" rx="8"/>
+          <text class="t" x="914" y="234">Company SUSPENDED</text>
+          <text class="s" x="914" y="252">logins + passes off</text>
+          <text class="s" x="914" y="267">data kept</text>
+
+          <path class="edge" d="M170 92H298" marker-end="url(#h4)"/>
+          <text class="lbl" x="235" y="84" text-anchor="middle">register · 202</text>
+          <path class="edge" d="M490 92H608" marker-end="url(#h4)"/>
+          <text class="lbl" x="550" y="84" text-anchor="middle">approve</text>
+          <path class="edge-ok" d="M800 92H898" marker-end="url(#h4o)"/>
+          <text class="lbl" x="850" y="84" text-anchor="middle">commit</text>
+
+          <path class="edge-warn" d="M705 124C705 172 445 172 445 126" marker-end="url(#h4w)"/>
+          <text class="lbl-warn" x="575" y="188" text-anchor="middle">failure → rolled back, still pending</text>
+
+          <path class="edge-bad" d="M345 124V208" marker-end="url(#h4b)"/>
+          <text class="lbl-bad" x="337" y="170" text-anchor="end">reject</text>
+
+          <path class="edge" d="M970 124V208" marker-end="url(#h4)"/>
+          <text class="lbl" x="962" y="170" text-anchor="end">suspend</text>
+          <path class="edge" d="M1030 210V126" marker-end="url(#h4)"/>
+          <text class="lbl" x="1038" y="170">reactivate</text>
+        </svg>
+      </div>
+      <figcaption>The approval transaction starts with a conditional <code>UPDATE … WHERE status = 'PENDING'</code>, which locks the request: a second superadmin approving at the same moment waits, then gets 409 (tested with three simultaneous approvals: one 200, two 409). A pending requester who signs in with the right password sees "waiting for approval"; a wrong password gets the same answer as an unknown email.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 5 ─────────────────────────────────────────────────────────────── -->
+  <section id="creating">
+    <div class="sec-num">05</div>
+    <h2>Creating a company</h2>
+    <p class="intro">What happens inside the approval transaction (<code>approveRequest</code> in <code>services/platform.ts</code>, <code>createCompany</code> in <code>services/tenants.ts</code>). If any step fails, all of them are rolled back.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Step</th><th>Action</th><th>Table</th></tr></thead>
+        <tbody>
+          <tr><td class="step">1</td><td>Claim the request: <code>UPDATE … SET status = 'APPROVED' WHERE id = $1 AND status = 'PENDING'</code></td><td><code>company_requests</code></td></tr>
+          <tr><td class="step">2</td><td>Insert the company: <code>ACTIVE</code>, Starter plan, a unique slug made from its name</td><td><code>companies</code></td></tr>
+          <tr><td class="step">3</td><td>Insert default settings (name, contact email, timezone from signup)</td><td><code>company_settings</code></td></tr>
+          <tr><td class="step">4</td><td>Insert the first user as <code>COMPANY_ADMIN</code>, with the password hash computed at signup</td><td><code>users</code>, <code>auth_credentials</code></td></tr>
+          <tr><td class="step">5</td><td>Link the request to the new company and clear its copy of the password hash</td><td><code>company_requests</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:12px;color:var(--muted);font-size:.92rem">After the commit the owner is emailed a sign-in link. On every boot the app applies any new migrations to the shared database.</p>
+  </section>
+
+  <!-- 6 ─────────────────────────────────────────────────────────────── -->
+  <section id="checkin">
+    <div class="sec-num">06</div>
+    <h2>QR check-in</h2>
+    <p class="intro">A pass carries a random token and nothing else. The database stores only its SHA-256 hash, so a leaked database cannot be turned back into working passes.</p>
+    <figure>
+      <div class="fig-scroll">
+        <svg class="dg" viewBox="0 0 1120 330" role="img" aria-label="A scanned token is hashed, the matching ticket row of the scanner's company is locked, and six checks run in order: ticket exists, same event, not cancelled, not already used, not expired, event open. Then a check-in row is inserted, guarded by a unique constraint on the ticket. Success commits and shows green; an already-used ticket or a lost race shows amber; every other failure shows red.">
+          <defs>
+            <marker id="h6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0 0L10 5L0 10z"/></marker>
+            <marker id="h6b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-bad" d="M0 0L10 5L0 10z"/></marker>
+            <marker id="h6w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-warn" d="M0 0L10 5L0 10z"/></marker>
+            <marker id="h6o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-ok" d="M0 0L10 5L0 10z"/></marker>
+          </defs>
+
+          <rect class="box" x="20" y="24" width="230" height="58" rx="8"/>
+          <text class="t" x="34" y="47">QR code / pass link</text>
+          <text class="s" x="34" y="67">…/checkin/&lt;64 hex&gt;</text>
+          <rect class="box" x="300" y="24" width="180" height="58" rx="8"/>
+          <text class="t" x="314" y="47">SHA-256(token)</text>
+          <text class="s" x="314" y="67">= qr_token_hash</text>
+          <rect class="acc" x="530" y="24" width="270" height="58" rx="8"/>
+          <text class="t" x="544" y="47">Lock the ticket row</text>
+          <text class="s" x="544" y="67">… AND company_id · FOR UPDATE</text>
+          <rect class="okb" x="860" y="24" width="240" height="58" rx="8"/>
+          <text class="t-ok" x="874" y="47">COMMIT · green "Welcome"</text>
+          <text class="s" x="874" y="67">ticket USED · audit row</text>
+
+          <path class="edge" d="M250 53H298M480 53H528" marker-end="url(#h6)"/>
+          <path class="edge" d="M665 82V116H86V148" marker-end="url(#h6)"/>
+
+          <!-- gates -->
+          <rect class="box" x="20" y="150" width="132" height="56" rx="8"/>
+          <text class="t" x="32" y="173">Ticket found?</text>
+          <text class="s" x="32" y="192">this company</text>
+          <rect class="box" x="176" y="150" width="132" height="56" rx="8"/>
+          <text class="t" x="188" y="173">Same event?</text>
+          <text class="s" x="188" y="192">scanner's event</text>
+          <rect class="box" x="332" y="150" width="132" height="56" rx="8"/>
+          <text class="t" x="344" y="173">Not cancelled?</text>
+          <text class="s" x="344" y="192">status</text>
+          <rect class="box" x="488" y="150" width="132" height="56" rx="8"/>
+          <text class="t" x="500" y="173">Not used yet?</text>
+          <text class="s" x="500" y="192">status ≠ USED</text>
+          <rect class="box" x="644" y="150" width="132" height="56" rx="8"/>
+          <text class="t" x="656" y="173">Not expired?</text>
+          <text class="s" x="656" y="192">expires_at</text>
+          <rect class="box" x="800" y="150" width="132" height="56" rx="8"/>
+          <text class="t" x="812" y="173">Event open?</text>
+          <text class="s" x="812" y="192">PUBLISHED|ONGOING</text>
+          <rect class="acc" x="956" y="150" width="132" height="56" rx="8"/>
+          <text class="t" x="968" y="173">Insert check-in</text>
+          <text class="s" x="968" y="192">UNIQUE(ticket)</text>
+
+          <path class="edge" d="M152 178H174M308 178H330M464 178H486M620 178H642M776 178H798M932 178H954" marker-end="url(#h6)"/>
+          <path class="edge-ok" d="M1022 150V84" marker-end="url(#h6o)"/>
+          <text class="lbl" x="1030" y="122">inserted</text>
+
+          <!-- exits -->
+          <path class="edge-bad" d="M86 206V260M242 206V260M398 206V260M710 206V260M866 206V260" marker-end="url(#h6b)"/>
+          <path class="edge-warn" d="M554 206V260M1022 206V260" marker-end="url(#h6w)"/>
+          <text class="lbl" x="94" y="238">no</text>
+          <text class="lbl" x="250" y="238">no</text>
+          <text class="lbl" x="406" y="238">no</text>
+          <text class="lbl" x="562" y="238">no</text>
+          <text class="lbl" x="718" y="238">no</text>
+          <text class="lbl" x="874" y="238">no</text>
+          <text class="lbl" x="1030" y="238">conflict</text>
+
+          <rect class="badb" x="20" y="262" width="132" height="52" rx="8"/>
+          <text class="t-bad" x="32" y="284">INVALID_TICKET</text>
+          <text class="s" x="32" y="302">404</text>
+          <rect class="badb" x="176" y="262" width="132" height="52" rx="8"/>
+          <text class="t-bad" x="188" y="284">INVALID_TICKET</text>
+          <text class="s" x="188" y="302">404 · other event</text>
+          <rect class="badb" x="332" y="262" width="132" height="52" rx="8"/>
+          <text class="t-bad" x="344" y="284">CANCELLED</text>
+          <text class="s" x="344" y="302">410</text>
+          <rect class="warnb" x="488" y="262" width="132" height="52" rx="8"/>
+          <text class="t-warn" x="500" y="284">ALREADY_USED</text>
+          <text class="s" x="500" y="302">409 · first time</text>
+          <rect class="badb" x="644" y="262" width="132" height="52" rx="8"/>
+          <text class="t-bad" x="656" y="284">EXPIRED</text>
+          <text class="s" x="656" y="302">410</text>
+          <rect class="badb" x="800" y="262" width="132" height="52" rx="8"/>
+          <text class="t-bad" x="812" y="284">NOT_ACTIVE</text>
+          <text class="s" x="812" y="302">409</text>
+          <rect class="warnb" x="956" y="262" width="132" height="52" rx="8"/>
+          <text class="t-warn" x="968" y="284">ALREADY_USED</text>
+          <text class="s" x="968" y="302">409 · race lost</text>
+        </svg>
+      </div>
+      <figcaption>The row lock makes simultaneous scans of one pass queue behind each other, and <code>UNIQUE(ticket_id)</code> on <code>checkins</code> is the final guard: in tests, 12 simultaneous scans of one pass produce exactly one success. A pass from another company is simply not found. Door phones show green (let in), amber (already used, with the time of first entry) or red (do not admit).</figcaption>
+    </figure>
+    <div class="notes">
+      <div class="note"><b>Issuing and resending</b><p>32 random bytes become the token. Because only the hash is kept, showing, downloading or emailing a pass issues a fresh token and the old QR stops working.</p></div>
+      <div class="note"><b>Guest pass page</b><p><code>/pass/&lt;company-slug&gt;/&lt;token&gt;</code> needs no login. The slug identifies the company, and the lookup is limited to it. The page shows only the event and that guest's own pass, and lets them RSVP.</p></div>
+      <div class="note"><b>Manual check-in</b><p>Search by name runs the same locked transaction by ticket id. Door staff see masked email addresses only.</p></div>
+    </div>
+  </section>
+
+  <!-- 7 ─────────────────────────────────────────────────────────────── -->
+  <section id="data">
+    <div class="sec-num">07</div>
+    <h2>Keeping companies apart</h2>
+    <p class="intro">Platform tables describe companies and logins. Company tables hold everything else, and every row carries its company's id. Keys that include <code>company_id</code> let the database itself refuse a row that mixes two companies.</p>
+    <figure>
+      <div class="fig-scroll">
+        <svg class="dg" viewBox="0 0 1120 350" role="img" aria-label="Platform tables hold plans, companies, superadmins, signup requests and credentials. Company tables all carry company_id. A ticket references its event and its guest through composite keys that include company_id, so the database rejects a ticket that points at another company's guest.">
+          <defs>
+            <marker id="h7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0 0L10 5L0 10z"/></marker>
+            <marker id="h7b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-bad" d="M0 0L10 5L0 10z"/></marker>
+          </defs>
+
+          <!-- platform tables -->
+          <rect class="box" x="20" y="20" width="300" height="242" rx="10"/>
+          <text class="th" x="36" y="42">Platform tables</text>
+          <line class="rowline" x1="20" y1="50" x2="320" y2="50"/>
+          <text class="sf" x="36" y="72">plans</text><text class="s" x="180" y="72">plan limits</text>
+          <line class="rowline" x1="20" y1="84" x2="320" y2="84"/>
+          <text class="sf" x="36" y="106">companies</text><text class="s" x="180" y="106">status · slug</text>
+          <line class="rowline" x1="20" y1="118" x2="320" y2="118"/>
+          <text class="sf" x="36" y="140">platform_admins</text><text class="s" x="180" y="140">superadmins</text>
+          <line class="rowline" x1="20" y1="152" x2="320" y2="152"/>
+          <text class="sf" x="36" y="174">company_requests</text><text class="s" x="180" y="174">signups</text>
+          <line class="rowline" x1="20" y1="186" x2="320" y2="186"/>
+          <text class="sf" x="36" y="208">auth_credentials</text><text class="s" x="180" y="208">bcrypt hashes</text>
+          <line class="rowline" x1="20" y1="220" x2="320" y2="220"/>
+          <text class="sf" x="36" y="242">password_resets</text><text class="s" x="180" y="242">token hashes</text>
+
+          <!-- company tables -->
+          <rect class="grp" x="360" y="20" width="740" height="310" rx="10"/>
+          <text class="th" x="376" y="42">Company tables · every row carries company_id</text>
+
+          <rect class="acc" x="380" y="62" width="210" height="96" rx="8"/>
+          <text class="t" x="394" y="84">events</text>
+          <text class="s" x="394" y="104">company_id · id</text>
+          <text class="s" x="394" y="121">event_code</text>
+          <text class="s" x="394" y="138">UNIQUE(company_id,id)</text>
+
+          <rect class="acc" x="380" y="212" width="210" height="96" rx="8"/>
+          <text class="t" x="394" y="234">guests</text>
+          <text class="s" x="394" y="254">company_id · id</text>
+          <text class="s" x="394" y="271">email · phone</text>
+          <text class="s" x="394" y="288">UNIQUE(company_id,id)</text>
+
+          <rect class="box" x="680" y="120" width="210" height="112" rx="8"/>
+          <text class="t" x="694" y="142">tickets</text>
+          <text class="s" x="694" y="162">company_id</text>
+          <text class="s" x="694" y="179">(company_id, event_id)</text>
+          <text class="s" x="694" y="196">(company_id, guest_id)</text>
+          <text class="s" x="694" y="213">qr_token_hash</text>
+
+          <path class="edge" d="M680 160H636V110H592" marker-end="url(#h7)"/>
+          <path class="edge" d="M680 196H636V260H592" marker-end="url(#h7)"/>
+
+          <rect class="ghost" x="930" y="212" width="150" height="96" rx="8"/>
+          <text class="t" x="944" y="234">guests</text>
+          <text class="s" x="944" y="254">of another</text>
+          <text class="s" x="944" y="271">company</text>
+          <path class="edge-bad" d="M890 196H1005V210" marker-end="url(#h7b)"/>
+          <text class="lbl-bad" x="905" y="186">✕ rejected · 23503</text>
+
+          <text class="lbl" x="930" y="72">SAME PATTERN</text>
+          <text class="s" x="930" y="92">users</text>
+          <text class="s" x="930" y="108">company_settings</text>
+          <text class="s" x="930" y="124">event_managers</text>
+          <text class="s" x="930" y="140">invitations</text>
+          <text class="s" x="930" y="156">checkins</text>
+          <text class="s" x="930" y="172">audit_logs</text>
+        </svg>
+      </div>
+      <figcaption>Every query in <code>services/</code> filters by the session's company, so another company's records behave exactly like records that don't exist (404). The composite keys are the safety net for writes: a ticket, invitation, check-in or manager assignment can never link two companies, even if a query were wrong. Reads have no database-level guard yet; PostgreSQL row-level security would add one.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 8 ─────────────────────────────────────────────────────────────── -->
+  <section id="roles">
+    <div class="sec-num">08</div>
+    <h2>Roles inside a company</h2>
+    <p class="intro">One matrix in <code>server/src/lib/permissions.ts</code>, enforced on the server for every route. The web app only uses it to hide menu items.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Permission</th><th>What it covers</th><th class="c">Company admin</th><th class="c">Event manager</th><th class="c">Check-in staff</th></tr></thead>
+        <tbody>
+          <tr><td><code>checkin:scan</code></td><td>Scan passes, search guests at the door</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+          <tr><td><code>events:read</code></td><td>See events (staff never see drafts)</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+          <tr><td><code>events:write</code></td><td>Create, edit, publish, duplicate events</td><td class="c yes">✓</td><td class="c yes">✓ own events</td><td class="c no">–</td></tr>
+          <tr><td><code>guests:manage</code> / <code>guests:export</code></td><td>Guest list, CSV import and export</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">–</td></tr>
+          <tr><td><code>tickets:manage</code> / <code>invitations:send</code></td><td>Issue passes, email invitations</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">–</td></tr>
+          <tr><td><code>reports:view</code></td><td>Live dashboard and reports</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">–</td></tr>
+          <tr><td><code>users:manage</code></td><td>Team members and roles, event managers</td><td class="c yes">✓</td><td class="c no">–</td><td class="c no">–</td></tr>
+          <tr><td><code>company:manage</code> / <code>audit:view</code> / <code>integrations:manage</code></td><td>Company settings, audit log, integrations</td><td class="c yes">✓</td><td class="c no">–</td><td class="c no">–</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:12px;color:var(--muted);font-size:.92rem">Plan limits sit on top of roles: Starter allows 3 active events and 500 guests per event, Business 50 and 5,000, Enterprise unlimited. Superadmins change a company's plan from <code>/admin</code>.</p>
+  </section>
+
+  <!-- 9 ─────────────────────────────────────────────────────────────── -->
+  <section id="backups">
+    <div class="sec-num">09</div>
+    <h2>Backups and restore</h2>
+    <p class="intro">Every company lives in the one database, so one dump is a complete backup.</p>
+    <div class="notes">
+      <div class="note"><b>Nightly backup</b><p><code>deploy/backup.sh</code> runs <code>pg_dump</code> into <code>database.sql.gz</code>, checks the dump is complete, keeps 14 days, and can copy each backup off the server with rclone (Cloudflare R2, Backblaze B2).</p></div>
+      <div class="note"><b>Restore</b><p><code>deploy/restore.sh &lt;backup folder&gt;</code> asks you to type <code>restore</code>, loads the dump into the bundled database and restarts the app. Tested end to end: wipe every volume, restore, sign in, data is back.</p></div>
+      <div class="note"><b>Managed database</b><p>With <code>DATABASE_URL</code> pointing at Supabase, Neon or similar, use the provider's own backups instead.</p></div>
+    </div>
+  </section>
+
+  <!-- 10 ────────────────────────────────────────────────────────────── -->
+  <section id="code">
+    <div class="sec-num">10</div>
+    <h2>Code map</h2>
+    <p class="intro">Routes are thin. Authorization and business rules live in <code>services/</code>, and every service function takes the company-bound context as its first argument.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Path</th><th>Responsibility</th></tr></thead>
+        <tbody>
+          <tr><td><code>server/src/app.ts</code></td><td>Helmet/CSP, rate limits, JSON limits, <code>robots.txt</code> and <code>sitemap.xml</code>, landing page at <code>/</code>, React shell elsewhere</td></tr>
+          <tr><td><code>server/src/middleware/http.ts</code></td><td>Cookies, CSRF guard, <code>authenticate</code>, <code>authenticateAdmin</code>, <code>requirePermission</code>, error handler that never leaks internals</td></tr>
+          <tr><td><code>server/src/routes/index.ts</code>, <code>admin.ts</code></td><td>Company API and superadmin API</td></tr>
+          <tr><td><code>server/src/services/auth.ts</code></td><td>Signup requests, login, <code>loadContext</code>, password change and reset</td></tr>
+          <tr><td><code>server/src/services/platform.ts</code></td><td>Superadmin login, approve (one transaction) / reject, suspend, plan changes, bootstrap admin</td></tr>
+          <tr><td><code>server/src/services/tenants.ts</code></td><td><code>createCompany</code>: company, settings, first admin</td></tr>
+          <tr><td><code>server/src/services/checkin.ts</code>, <code>tickets.ts</code></td><td>Locked check-in transaction; issuing, reissuing and emailing passes</td></tr>
+          <tr><td><code>server/src/db/pools.ts</code>, <code>migrator.ts</code></td><td>The shared connection pool; numbered SQL migrations with advisory lock</td></tr>
+          <tr><td><code>server/src/db/migrations/001_init.sql</code></td><td>The whole schema, including the composite company keys</td></tr>
+          <tr><td><code>web/index.html</code>, <code>web/src/landing/</code></td><td>Static landing page with structured data</td></tr>
+          <tr><td><code>web/app.html</code>, <code>web/src/</code></td><td>React app: router, feature pages, admin console</td></tr>
+          <tr><td><code>docker-compose.yml</code>, <code>deploy/</code></td><td>Caddy, app and database containers; backup and restore scripts</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+</body>
+</html>

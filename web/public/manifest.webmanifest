@@ -1,0 +1,11 @@
+{
+  "name": "EventPass",
+  "short_name": "EventPass",
+  "description": "Guest lists, QR passes and fast door check-in for your events.",
+  "start_url": "/login",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#1565c0",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

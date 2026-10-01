@@ -1,0 +1,22 @@
+{
+  "name": "eventpass",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "workspaces": ["server", "web"],
+  "scripts": {
+    "dev": "npm run dev -w server",
+    "dev:web": "npm run dev -w web",
+    "build": "npm run build -w server && npm run build -w web",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w web",
+    "lint": "eslint .",
+    "test": "npm run test -w server",
+    "migrate:status": "npm run migrate:status -w server",
+    "migrate": "npm run migrate -w server"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "typescript-eslint": "^8.0.0",
+    "eslint-plugin-react-hooks": "^5.0.0"
+  }
+}

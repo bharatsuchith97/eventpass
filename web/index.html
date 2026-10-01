@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>EventPass – Guest lists, QR passes &amp; fast event check-in</title>
+    <meta name="description" content="EventPass manages guest lists, emails QR passes and checks guests in at the door in seconds. Your guest data stays private to your company. Request access today." />
+    <link rel="canonical" href="__APP_URL__/" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#1565c0" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="EventPass" />
+    <meta property="og:title" content="EventPass – Guest lists, QR passes &amp; fast event check-in" />
+    <meta property="og:description" content="Import your guests, email everyone a QR pass and check them in at the door in seconds. Duplicate scans are caught automatically." />
+    <meta property="og:url" content="__APP_URL__/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="EventPass – Guest lists, QR passes &amp; fast event check-in" />
+    <meta name="twitter:description" content="Import your guests, email everyone a QR pass and check them in at the door in seconds." />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "EventPass",
+        "url": "__APP_URL__/",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web browser",
+        "description": "Event guest management with QR passes, email invitations, RSVP and fast door check-in."
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          { "@type": "Question", "name": "Do my guests need to install an app?", "acceptedAnswer": { "@type": "Answer", "text": "No. Each guest gets a link to their pass, which opens in any browser. Passes can also be printed or saved as a PDF." } },
+          { "@type": "Question", "name": "Can a pass be used twice?", "acceptedAnswer": { "@type": "Answer", "text": "No. A pass checks in exactly once, even if two staff scan it at the same moment. A repeat scan shows when the guest was first checked in." } },
+          { "@type": "Question", "name": "Can I import my existing guest list?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Upload a CSV file and EventPass previews it and points out any rows with problems before anything is saved. Excel sheets can be saved as CSV first." } },
+          { "@type": "Question", "name": "Who can see my guest data?", "acceptedAnswer": { "@type": "Answer", "text": "Only your team. Everything in EventPass is tied to your company account, other companies can never see it, and QR codes contain a random code rather than names or email addresses." } },
+          { "@type": "Question", "name": "Does check-in work on a phone?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Staff scan QR codes with the phone camera in the browser, or search for a guest by name if a pass is not at hand." } },
+          { "@type": "Question", "name": "How do I get started?", "acceptedAnswer": { "@type": "Answer", "text": "Request a company account. Once it has been approved you get an email and can sign in and create your first event." } }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="/src/landing/landing.css" />
+    <noscript><style>@media (max-width: 880px) { .site-nav { display: flex; position: static; } .menu-toggle { display: none; } .header-row { flex-wrap: wrap; } }</style></noscript>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="wrap header-row">
+        <a class="brand" href="/" aria-label="EventPass home">
+          <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="currentColor" /><path d="M9 9h6v6H9zM17 9h6v6h-6zM9 17h6v6H9zM19 19h4v4h-4z" fill="#fff" /></svg>
+          <span>EventPass</span>
+        </a>
+        <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+          <span class="sr-only">Menu</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+        </button>
+        <nav id="site-nav" class="site-nav" aria-label="Main">
+          <a href="#features">Features</a>
+          <a href="#how-it-works">How it works</a>
+          <a href="#privacy">Privacy</a>
+          <a href="#plans">Plans</a>
+          <a href="#faq">FAQ</a>
+          <span class="nav-actions">
+            <a class="btn btn-ghost" href="/login" data-session="signin">Sign in</a>
+            <a class="btn btn-primary" href="/register" data-session="cta">Request access</a>
+          </span>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero">
+        <div class="wrap hero-grid">
+          <div>
+            <p class="eyebrow">Event guest management &amp; QR check-in</p>
+            <h1>From guest list to front door, without the queue.</h1>
+            <p class="lead">
+              Import your guests, email everyone a personal QR pass and check them in at the door in seconds.
+              EventPass catches duplicate and cancelled passes for you, and keeps your guest list private to your company.
+            </p>
+            <div class="cta-row">
+              <a class="btn btn-primary btn-lg" href="/register">Request access</a>
+              <a class="btn btn-outline btn-lg" href="#how-it-works">See how it works</a>
+            </div>
+            <ul class="hero-points">
+              <li>No app for guests to install</li>
+              <li>Works on any phone at the door</li>
+              <li>Live attendance as guests arrive</li>
+            </ul>
+          </div>
+
+          <figure class="hero-visual" aria-label="A phone at the event entrance showing a successful check-in">
+            <svg viewBox="0 0 320 560" role="img" aria-labelledby="hero-svg-title">
+              <title id="hero-svg-title">Check-in screen showing a green “Checked in” result for a VIP guest</title>
+              <rect x="10" y="6" width="300" height="548" rx="40" fill="#0f172a" />
+              <rect x="24" y="20" width="272" height="520" rx="30" fill="#f5f7fa" />
+              <rect x="120" y="30" width="80" height="8" rx="4" fill="#cbd5e1" />
+              <text x="44" y="78" font-size="15" font-weight="700" fill="#0f172a">Summer Gala · Door A</text>
+              <text x="44" y="98" font-size="12" fill="#64748b">312 of 450 checked in</text>
+              <rect x="44" y="108" width="232" height="8" rx="4" fill="#e2e8f0" />
+              <rect x="44" y="108" width="161" height="8" rx="4" fill="#1565c0" />
+              <rect x="44" y="136" width="232" height="244" rx="22" fill="#2e7d32" />
+              <circle cx="160" cy="208" r="40" fill="#fff" fill-opacity=".18" />
+              <path d="M140 208l14 14 28-30" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+              <text x="160" y="284" font-size="24" font-weight="800" fill="#fff" text-anchor="middle">Checked in</text>
+              <text x="160" y="312" font-size="15" fill="#fff" text-anchor="middle">Ada Lovelace</text>
+              <rect x="134" y="326" width="52" height="22" rx="11" fill="#fff" fill-opacity=".22" />
+              <text x="160" y="341" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">VIP</text>
+              <rect x="44" y="400" width="232" height="52" rx="14" fill="#fff" stroke="#e2e8f0" />
+              <text x="64" y="431" font-size="13" fill="#475569">Next guest? Scan the QR code</text>
+              <rect x="44" y="466" width="232" height="52" rx="14" fill="#1565c0" />
+              <text x="160" y="497" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">Scan next pass</text>
+            </svg>
+          </figure>
+        </div>
+      </section>
+
+      <section id="features" class="section">
+        <div class="wrap">
+          <header class="section-head">
+            <h2>Everything you need to run the door</h2>
+            <p>One place for your guest list, invitations, passes and check-in, so your team is not juggling spreadsheets on the day.</p>
+          </header>
+          <div class="grid-3">
+            <article class="card">
+              <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0M4 20a8 8 0 0 1 16 0M17 4h4M19 2v4" /></svg></div>
+              <h3>Guest lists that stay tidy</h3>
+              <p>Add guests one by one or import a CSV. You see a preview with every problem row flagged before anything is saved. Tag VIPs, speakers, sponsors and more.</p>
+            </article>
+            <article class="card">
+              <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2v2h-2zM18 14h2v2h-2z" /></svg></div>
+              <h3>A personal QR pass for everyone</h3>
+              <p>Every guest gets their own pass to open on their phone, print, or download as a PDF. Resending a pass automatically replaces the old one.</p>
+            </article>
+            <article class="card">
+              <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zM3 7l9 6 9-6" /></svg></div>
+              <h3>Invitations and RSVP</h3>
+              <p>Email invitations with the pass included. Guests confirm or decline from their pass page, and you can see who has opened their invitation.</p>
+            </article>
+            <article class="card">
+              <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16" /></svg></div>
+              <h3>Check-in in seconds</h3>
+              <p>Scan with the phone camera or search by name. A full-screen green, amber or red result tells staff exactly what to do. Each pass works only once.</p>
+            </article>
+            <article class="card">
+              <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg></div>
+              <h3>Live dashboard and reports</h3>
+              <p>Watch arrivals as they happen, then download attendance, no-show and RSVP reports as CSV once the doors close.</p>
+            </article>
+            <article class="card">
+              <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0" /></svg></div>
+              <h3>The right access for each person</h3>
+              <p>Admins, event managers and check-in staff each see only what they need. Door staff never see full guest email addresses.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="how-it-works" class="section section-alt">
+        <div class="wrap">
+          <header class="section-head">
+            <h2>How it works</h2>
+            <p>Four steps from a new event to a busy front door.</p>
+          </header>
+          <ol class="steps">
+            <li><span class="step-n" aria-hidden="true">1</span><h3>Create your event</h3><p>Add the date, venue and capacity, and choose who manages it.</p></li>
+            <li><span class="step-n" aria-hidden="true">2</span><h3>Add your guests</h3><p>Import your list from a CSV file or add people as they register.</p></li>
+            <li><span class="step-n" aria-hidden="true">3</span><h3>Send the passes</h3><p>Everyone gets an email with their QR pass and a link to RSVP.</p></li>
+            <li><span class="step-n" aria-hidden="true">4</span><h3>Scan at the door</h3><p>Staff scan passes on their phones and the dashboard updates live.</p></li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="privacy" class="section">
+        <div class="wrap split">
+          <div>
+            <h2>Your guests' details stay yours</h2>
+            <p class="lead-sm">Guest lists hold names, emails and phone numbers. EventPass is built so that information stays with the company it belongs to.</p>
+          </div>
+          <ul class="checklist">
+            <li><strong>Private to your company.</strong> Every event, guest and pass belongs to your company account, and other companies can never see or change them.</li>
+            <li><strong>QR codes carry no personal details.</strong> A pass holds only a random code, so a photo of it reveals nothing about the guest.</li>
+            <li><strong>Only your team gets in.</strong> Every action is checked against the person's role, and important changes are recorded in an audit log.</li>
+            <li><strong>Hard-to-fake passes.</strong> Cancelled, expired, already-used and wrong-event passes are all turned away at the door.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="plans" class="section section-alt">
+        <div class="wrap">
+          <header class="section-head">
+            <h2>Plans for every size of event</h2>
+            <p>Every plan includes QR passes, email invitations, RSVP, check-in, the live dashboard and reports.</p>
+          </header>
+          <div class="grid-3 plans">
+            <article class="card plan">
+              <h3>Starter</h3>
+              <p class="plan-for">For occasional events</p>
+              <ul>
+                <li>Up to <strong>3</strong> active events</li>
+                <li>Up to <strong>500</strong> guests per event</li>
+              </ul>
+              <a class="btn btn-outline" href="/register">Request access</a>
+            </article>
+            <article class="card plan plan-featured">
+              <h3>Business</h3>
+              <p class="plan-for">For teams running events all year</p>
+              <ul>
+                <li>Up to <strong>50</strong> active events</li>
+                <li>Up to <strong>5,000</strong> guests per event</li>
+              </ul>
+              <a class="btn btn-primary" href="/register">Request access</a>
+            </article>
+            <article class="card plan">
+              <h3>Enterprise</h3>
+              <p class="plan-for">For large organisations</p>
+              <ul>
+                <li><strong>Unlimited</strong> active events</li>
+                <li><strong>Unlimited</strong> guests per event</li>
+              </ul>
+              <a class="btn btn-outline" href="/register">Request access</a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="faq" class="section">
+        <div class="wrap narrow">
+          <header class="section-head">
+            <h2>Frequently asked questions</h2>
+          </header>
+          <div class="faq">
+            <details>
+              <summary>Do my guests need to install an app?</summary>
+              <p>No. Each guest gets a link to their pass, which opens in any browser. Passes can also be printed or saved as a PDF.</p>
+            </details>
+            <details>
+              <summary>Can a pass be used twice?</summary>
+              <p>No. A pass checks in exactly once, even if two staff scan it at the same moment. A repeat scan shows when the guest was first checked in.</p>
+            </details>
+            <details>
+              <summary>Can I import my existing guest list?</summary>
+              <p>Yes. Upload a CSV file and EventPass previews it and points out any rows with problems before anything is saved. Excel sheets can be saved as CSV first.</p>
+            </details>
+            <details>
+              <summary>Who can see my guest data?</summary>
+              <p>Only your team. Everything in EventPass is tied to your company account, other companies can never see it, and QR codes contain a random code rather than names or email addresses.</p>
+            </details>
+            <details>
+              <summary>Does check-in work on a phone?</summary>
+              <p>Yes. Staff scan QR codes with the phone camera in the browser, or search for a guest by name if a pass is not at hand.</p>
+            </details>
+            <details>
+              <summary>How do I get started?</summary>
+              <p>Request a company account. Once it has been approved you get an email and can sign in and create your first event.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta-band">
+        <div class="wrap cta-band-inner">
+          <h2>Ready for a smoother front door?</h2>
+          <p>Request an account for your company. We will email you as soon as it is approved.</p>
+          <a class="btn btn-light btn-lg" href="/register">Request access</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-row">
+        <p>&copy; <span data-year>2026</span> EventPass</p>
+        <nav aria-label="Footer">
+          <a href="#features">Features</a>
+          <a href="#plans">Plans</a>
+          <a href="#faq">FAQ</a>
+          <a href="/login">Sign in</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/landing/landing.ts"></script>
+  </body>
+</html>

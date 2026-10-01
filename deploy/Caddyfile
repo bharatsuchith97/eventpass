@@ -1,0 +1,6 @@
+# Caddy gets and renews a Let's Encrypt certificate for $DOMAIN automatically (ports 80 and 443 must be open).
+# With DOMAIN=localhost it uses a self-signed local certificate instead, for trying the stack on your own machine.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:4000
+}

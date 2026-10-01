@@ -1,0 +1,35 @@
+# Render Blueprint: one web service built from the Dockerfile (API + web app on one port).
+# The database is external (Neon): paste its connection string into DATABASE_URL when Render asks.
+# Values marked `sync: false` are prompted for when the Blueprint is first applied. See DEPLOY.md, Option A.
+services:
+  - type: web
+    name: eventpass
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter # always on; the free plan sleeps after ~15 idle minutes, which is too slow for the door
+    region: singapore # pick the region closest to your guests and to your Neon database
+    healthCheckPath: /api/health
+    autoDeploy: true # every push to the default branch redeploys; migrations run automatically on boot
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4000"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: DB_POOL_MAX
+        value: "10"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false # Neon: the direct (not "-pooler") connection string, ending in ?sslmode=require
+      - key: APP_URL
+        sync: false # https://your-domain (or the https://<name>.onrender.com URL until the domain is set up)
+      - key: SUPERADMIN_EMAIL
+        sync: false
+      - key: SUPERADMIN_PASSWORD
+        sync: false # 12+ characters
+      - key: SMTP_URL
+        sync: false
+      - key: MAIL_FROM
+        sync: false # e.g. EventPass <no-reply@your-domain>

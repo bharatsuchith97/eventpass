@@ -1,0 +1,11 @@
+# Keep the build context small and free of local data/secrets.
+**/node_modules
+**/dist
+server/.dev
+server/.secrets
+.env
+.env.*
+!.env.example
+**/*.log
+.git
+deploy
