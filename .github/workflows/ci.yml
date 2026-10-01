@@ -1,0 +1,44 @@
+# Every push and pull request: typecheck, lint, tests (against a real throw-away PostgreSQL), web build.
+# Pushes to main that pass are then deployed to Render through its deploy hook, so a broken commit never ships.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build -w web
+
+  deploy:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      # Render → service → Settings → Deploy Hook. Store it as a repository secret (it is a password-like URL).
+      RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+    steps:
+      - name: Trigger Render deploy
+        if: env.RENDER_DEPLOY_HOOK_URL != ''
+        run: curl --fail --silent --show-error -X POST "$RENDER_DEPLOY_HOOK_URL" > /dev/null
+      - name: Deploy hook not configured yet
+        if: env.RENDER_DEPLOY_HOOK_URL == ''
+        run: echo "::notice::Checks passed. Add the RENDER_DEPLOY_HOOK_URL repository secret to deploy automatically."

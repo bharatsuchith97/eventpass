@@ -9,7 +9,7 @@ services:
     plan: starter # always on; the free plan sleeps after ~15 idle minutes, which is too slow for the door
     region: singapore # pick the region closest to your guests and to your Neon database
     healthCheckPath: /api/health
-    autoDeploy: true # every push to the default branch redeploys; migrations run automatically on boot
+    autoDeploy: false # GitHub Actions deploys through the deploy hook after the checks pass (.github/workflows/ci.yml)
     envVars:
       - key: NODE_ENV
         value: production

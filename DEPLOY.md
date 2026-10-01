@@ -48,6 +48,13 @@ The app creates all its tables on first start; there is nothing to set up inside
    `[migrate] applied 001`, `[superadmin] created …` and `EventPass API listening on :4000`.
 4. Open the service's address (shown at the top of its page). If it differs from what you entered as `APP_URL`,
    correct `APP_URL` under **Environment**; Render redeploys automatically.
+5. **Turn on automatic deploys from GitHub.** `render.yaml` switches Render's own auto-deploy off, so that a push
+   only goes live after GitHub Actions has run the checks (`.github/workflows/ci.yml`: typecheck, lint, tests, build).
+   - Render → service → **Settings → Deploy Hook**: copy the URL (treat it like a password).
+   - GitHub → repository → **Settings → Secrets and variables → Actions → New repository secret**:
+     name `RENDER_DEPLOY_HOOK_URL`, value the URL you copied.
+
+   From then on every push to `main` is checked and, if everything passes, deployed.
 
 ## A3. Use your own domain
 
@@ -69,7 +76,7 @@ The app creates all its tables on first start; there is nothing to set up inside
 
 | Task | How |
 |---|---|
-| Deploy a new version | `git push` to the main branch; Render rebuilds and migrations run on start |
+| Deploy a new version | `git push` to `main`. GitHub Actions runs the checks, then triggers Render; migrations run on start. Watch it under the repository's **Actions** tab |
 | Logs | Render → service → **Logs** |
 | Browse the database | Neon → **SQL Editor**, or connect pgAdmin/DBeaver with the connection string |
 | Back up | Neon keeps a short restore history on the free plan. For your own copy, run `pg_dump "<connection string>" > eventpass.sql` from a computer with PostgreSQL tools installed, e.g. before and after the event |
