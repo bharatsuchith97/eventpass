@@ -1,5 +1,6 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { z } from 'zod';
+import { pool } from '../db/pools';
 import { AppError, notFound, parse } from '../lib/errors';
 import {
   asyncHandler, authenticate, authLimiter, clearSessionCookie, ctxOf, idParam, pagination, publicLimiter, requirePermission, setSessionCookie,
@@ -47,6 +48,11 @@ export function apiRouter(): Router {
     res.set('Cache-Control', 'no-store');
     res.json(await pub.getPublicPass(String(req.params.slug), String(req.params.token)));
   }));
+  r.get('/public/logo/:slug', publicLimiter, wrap(async (req, res) => {
+    const logo = await settings.publicLogo(pool(), String(req.params.slug));
+    // Logo URLs carry ?v=<upload time>, so a long cache is safe; cross-origin so email clients may load it too.
+    res.set({ 'Content-Type': logo.mime, 'Cache-Control': 'public, max-age=86400', 'Cross-Origin-Resource-Policy': 'cross-origin' }).send(logo.data);
+  }));
   r.post('/public/pass/:slug/:token/rsvp', publicLimiter, wrap(async (req, res) => {
     res.json(await pub.publicRsvp(String(req.params.slug), String(req.params.token), req.body));
   }));
@@ -69,6 +75,13 @@ export function apiRouter(): Router {
   // Company settings / users / audit
   r.get('/company/settings', wrap(async (req, res) => res.json(await settings.getSettings(ctxOf(req)))));
   r.put('/company/settings', requirePermission('company:manage'), wrap(async (req, res) => res.json(await settings.updateSettings(ctxOf(req), req.body))));
+  r.put(
+    '/company/logo',
+    requirePermission('company:manage'),
+    express.raw({ type: ['image/png', 'image/jpeg'], limit: settings.MAX_LOGO_BYTES }),
+    wrap(async (req, res) => res.json(await settings.setLogo(ctxOf(req), req.body))),
+  );
+  r.delete('/company/logo', requirePermission('company:manage'), wrap(async (req, res) => res.json(await settings.removeLogo(ctxOf(req)))));
   r.get('/users', requirePermission('users:manage'), wrap(async (req, res) => res.json({ items: await users.listUsers(ctxOf(req)) })));
   r.post('/users', requirePermission('users:manage'), wrap(async (req, res) => res.status(201).json(await users.createUser(ctxOf(req), req.body))));
   r.patch('/users/:id', requirePermission('users:manage'), wrap(async (req, res) => res.json(await users.updateUser(ctxOf(req), idParam(req), req.body))));

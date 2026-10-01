@@ -40,7 +40,7 @@ export function PublicPassPage() {
               companyName: p.companyName, eventName: p.eventName, startDatetime: p.startDatetime,
               venue: [p.venueName, p.venueAddress].filter(Boolean).join(', '),
               guestName: `${p.firstName} ${p.lastName}`, category: p.category, ticketNumber: p.ticketNumber,
-              qrValue: `${window.location.origin}/checkin/${token}`, brandColor: p.brandColor,
+              qrValue: `${window.location.origin}/checkin/${token}`, brandColor: p.brandColor, logoUrl: p.logoUrl,
             }}
           />
         </Box>

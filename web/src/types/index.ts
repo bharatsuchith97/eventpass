@@ -199,6 +199,7 @@ export interface PublicPass {
   category: GuestCategory;
   companyName: string;
   brandColor: string;
+  logoUrl: string | null;
 }
 
 // ---- Superadmin (platform operator) ----

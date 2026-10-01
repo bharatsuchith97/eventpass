@@ -112,6 +112,7 @@ function PassDialog({ row, event, onClose }: { row: TicketRow | null; event: Eve
                   ticketNumber: pass.ticketNumber,
                   qrValue: pass.qrValue,
                   brandColor: settings.data?.primaryBrandColor,
+                  logoUrl: settings.data?.logoUrl,
                 }}
               />
               <Stack direction="row" gap={1} flexWrap="wrap" justifyContent="center">

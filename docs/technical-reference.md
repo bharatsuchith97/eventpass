@@ -281,7 +281,7 @@ One database. Tables marked **company** carry `company_id` and are always querie
 | Table | Key columns | Constraints worth knowing |
 |---|---|---|
 | `users` | `company_id`, `id`, `email`, `full_name`, `role`, `status` | Email unique **across the platform** (people sign in by email alone) |
-| `company_settings` | `company_id` (primary key), `company_name`, `logo_url`, `primary_brand_color`, `timezone`, `default_language`, contact fields | One row per company |
+| `company_settings` | `company_id` (primary key), `company_name`, `logo_data` / `logo_mime` (uploaded PNG/JPG, ≤ 512 KB), `primary_brand_color`, `timezone`, `default_language`, contact fields | One row per company; `logo_url` is a leftover, unused |
 | `events` | `company_id`, `name`, `event_code`, venue, `start_datetime`, `end_datetime`, `capacity`, `status`, `banner_url`, `created_by` | Event code unique per company; end after start; creator must be the same company's user |
 | `event_managers` | `company_id`, `event_id`, `user_id` | Event and user must belong to that company |
 | `guests` | `company_id`, names, `email`, `phone`, `company_name`, `category`, `status` (`ACTIVE`/`DELETED`), `notes` | Email unique among a company's **active** guests; delete is a soft delete |
@@ -325,7 +325,8 @@ Guest categories: `VIP`, `SPEAKER`, `SPONSOR`, `STAFF`, `ATTENDEE`, `FAMILY`, `O
 - **Issue new QR** deliberately replaces the token; the previous QR, PDF and emailed link stop working. Use it for a lost or shared pass.
 - Changing `JWT_SECRET` makes stored tokens unreadable. Those passes keep working at the door and get a new QR the next time they are shown or sent.
 - A pass expires at the event's end time.
-- The PDF pass is a 320×520 pt page drawn with pdfkit.
+- The PDF pass is a 320×520 pt page drawn with pdfkit (560 pt tall when the company has a logo, which is centred at the top).
+- **Company logo:** uploaded in Settings (PNG/JPG, up to 512 KB, stored in the database). It appears centred at the top of the digital pass, the guest pass page and the PDF, at the top of invitation emails (as an inline image), and in the app header.
 
 ### Invitations and RSVP
 
@@ -367,6 +368,7 @@ All routes are under `/api`. Every `POST`/`PUT`/`PATCH`/`DELETE` must send the h
 | POST | `/api/auth/forgot-password` | Always `{ok: true}` |
 | POST | `/api/auth/reset-password` | `{token, newPassword}` |
 | GET | `/api/public/pass/:slug/:token` | Guest pass page data |
+| GET | `/api/public/logo/:slug` | A company's logo (used on pass pages, in the app header) |
 | POST | `/api/public/pass/:slug/:token/rsvp` | Guest RSVP |
 
 ### Company (session required; permission in brackets)
@@ -376,6 +378,7 @@ All routes are under `/api`. Every `POST`/`PUT`/`PATCH`/`DELETE` must send the h
 | GET | `/api/auth/me` | any |
 | POST | `/api/auth/change-password` | any |
 | GET / PUT | `/api/company/settings` | any / `company:manage` |
+| PUT / DELETE | `/api/company/logo` | `company:manage` (PUT body is the raw PNG/JPG, checked by its bytes, ≤ 512 KB) |
 | GET / POST | `/api/users` | `users:manage` |
 | PATCH | `/api/users/:id` | `users:manage` |
 | GET | `/api/audit-logs` | `audit:view` |

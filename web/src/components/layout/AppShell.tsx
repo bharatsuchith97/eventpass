@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  AppBar, Avatar, Box, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, Toolbar, Typography, useMediaQuery, useTheme,
+  AppBar, Avatar, Box, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, Stack, Toolbar, Typography, useMediaQuery, useTheme,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -14,7 +14,7 @@ import SearchIcon from '@mui/icons-material/PersonSearch';
 import GroupIcon from '@mui/icons-material/Groups';
 import ExtensionIcon from '@mui/icons-material/Extension';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { NAV_ROLES, useLogout, useMe } from '../../lib/auth/session';
+import { NAV_ROLES, useLogout, useMe, useSettings } from '../../lib/auth/session';
 import type { Role } from '../../types';
 
 interface NavItem {
@@ -45,6 +45,7 @@ const WIDTH = 248;
 
 export function AppShell() {
   const { data: me } = useMe();
+  const { data: settings } = useSettings(!!me);
   const logout = useLogout();
   const theme = useTheme();
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
@@ -90,7 +91,10 @@ export function AppShell() {
               <MenuIcon />
             </IconButton>
           )}
-          <Typography fontWeight={700} noWrap sx={{ flexGrow: 1 }}>{me.companyName}</Typography>
+          <Stack direction="row" alignItems="center" gap={1.5} sx={{ flexGrow: 1, minWidth: 0 }}>
+            {settings?.logoUrl && <Box component="img" src={settings.logoUrl} alt="" sx={{ height: 32, maxWidth: 120, objectFit: 'contain', flexShrink: 0 }} />}
+            <Typography fontWeight={700} noWrap>{me.companyName}</Typography>
+          </Stack>
           <IconButton onClick={(e) => setAnchor(e.currentTarget)} aria-label="Account menu">
             <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.main', fontSize: 14 }}>{(me.fullName || me.email)[0]?.toUpperCase()}</Avatar>
           </IconButton>

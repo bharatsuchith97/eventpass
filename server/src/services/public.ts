@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { pool } from '../db/pools';
 import { isWellFormedToken, sha256Hex } from '../lib/crypto';
 import { conflict, notFound, parse } from '../lib/errors';
+import { logoPath } from './settings';
 
 /**
  * Unauthenticated guest-facing pass. The company is resolved from the slug in the emailed link (the QR itself
@@ -23,7 +24,8 @@ export async function getPublicPass(slug: string, token: string) {
             e.name AS "eventName", e.start_datetime AS "startDatetime", e.end_datetime AS "endDatetime",
             e.venue_name AS "venueName", e.venue_address AS "venueAddress", e.status AS "eventStatus",
             g.first_name AS "firstName", g.last_name AS "lastName", g.category,
-            s.company_name AS "companyName", s.primary_brand_color AS "brandColor"
+            s.company_name AS "companyName", s.primary_brand_color AS "brandColor",
+            CASE WHEN s.logo_data IS NULL THEN NULL ELSE s.logo_updated_at END AS "logoUpdatedAt"
        FROM tickets t JOIN events e ON e.id = t.event_id JOIN guests g ON g.id = t.guest_id
        JOIN company_settings s ON s.company_id = t.company_id
       WHERE t.qr_token_hash = $1 AND t.company_id = $2`,
@@ -36,8 +38,8 @@ export async function getPublicPass(slug: string, token: string) {
             delivery_status = 'OPENED' WHERE ticket_id = $1 AND company_id = $2 AND sent`,
     [row.ticketId, companyId],
   );
-  const { ticketId: _id, ...pass } = row;
-  return pass;
+  const { ticketId: _id, logoUpdatedAt, ...pass } = row;
+  return { ...pass, logoUrl: logoUpdatedAt ? logoPath(slug, logoUpdatedAt as Date) : null };
 }
 
 export async function publicRsvp(slug: string, token: string, input: unknown) {

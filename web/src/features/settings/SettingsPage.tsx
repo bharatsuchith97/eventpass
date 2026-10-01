@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Button, Card, CardContent, MenuItem, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, CardContent, MenuItem, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -13,6 +13,57 @@ import { applyServerErrors } from '../auth/AuthPages';
 
 const ZONES = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : ['UTC'];
 
+const MAX_LOGO_BYTES = 512 * 1024;
+
+/** Upload / replace / remove the company logo. Shown on passes, the guest pass page, emails and the app header. */
+function LogoField({ logoUrl }: { logoUrl: string | null }) {
+  const qc = useQueryClient();
+  const [err, setErr] = useState<string | null>(null);
+  const done = (d: CompanySettings) => {
+    setErr(null);
+    qc.setQueryData(['settings'], d);
+  };
+  const upload = useMutation({
+    mutationFn: (file: File) => api<CompanySettings>('/company/logo', { method: 'PUT', body: file }),
+    onSuccess: done,
+    onError: (e) => setErr(e.message),
+  });
+  const remove = useMutation({
+    mutationFn: () => api<CompanySettings>('/company/logo', { method: 'DELETE' }),
+    onSuccess: done,
+    onError: (e) => setErr(e.message),
+  });
+  const pick = (file: File | undefined) => {
+    if (!file) return;
+    if (!['image/png', 'image/jpeg'].includes(file.type)) return setErr('Choose a PNG or JPG image.');
+    if (file.size > MAX_LOGO_BYTES) return setErr('The logo must be 512 KB or smaller.');
+    upload.mutate(file);
+  };
+  const busy = upload.isPending || remove.isPending;
+  return (
+    <Stack gap={1}>
+      <Typography variant="body2" fontWeight={600}>Logo</Typography>
+      <Stack direction="row" gap={2} alignItems="center" flexWrap="wrap">
+        <Box sx={{ width: 160, height: 64, border: 1, borderColor: 'divider', borderRadius: 2, display: 'grid', placeItems: 'center', bgcolor: '#fff', p: 1 }}>
+          {logoUrl
+            ? <Box component="img" src={logoUrl} alt="Company logo" sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+            : <Typography variant="caption" color="text.secondary">No logo yet</Typography>}
+        </Box>
+        <Stack direction="row" gap={1}>
+          <Button component="label" variant="outlined" size="small" disabled={busy}>
+            {upload.isPending ? 'Uploading...' : logoUrl ? 'Replace' : 'Upload logo'}
+            <input hidden type="file" accept="image/png,image/jpeg" onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ''; }} />
+          </Button>
+          {logoUrl && <Button size="small" color="error" disabled={busy} onClick={() => remove.mutate()}>Remove</Button>}
+        </Stack>
+      </Stack>
+      {err ? <Alert severity="error">{err}</Alert> : (
+        <Typography variant="caption" color="text.secondary">PNG or JPG, up to 512 KB. A wide logo on a transparent or white background works best. It appears on passes, invitation emails and the guest pass page.</Typography>
+      )}
+    </Stack>
+  );
+}
+
 function CompanyForm() {
   const qc = useQueryClient();
   const s = useSettings();
@@ -20,7 +71,7 @@ function CompanyForm() {
   const { register, handleSubmit, formState: { errors, isDirty }, setError } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     values: s.data ? {
-      companyName: s.data.companyName, logoUrl: s.data.logoUrl ?? '', primaryBrandColor: s.data.primaryBrandColor, timezone: s.data.timezone,
+      companyName: s.data.companyName, primaryBrandColor: s.data.primaryBrandColor, timezone: s.data.timezone,
       defaultLanguage: s.data.defaultLanguage, contactEmail: s.data.contactEmail ?? '', contactPhone: s.data.contactPhone ?? '',
     } : undefined,
   });
@@ -36,7 +87,7 @@ function CompanyForm() {
         <Stack component="form" gap={2} onSubmit={handleSubmit((v) => m.mutate(v))} noValidate>
           {m.error && <Alert severity="error">{m.error.message}</Alert>}
           <TextField label="Company name" {...register('companyName')} error={!!errors.companyName} helperText={errors.companyName?.message} />
-          <TextField label="Logo URL" {...register('logoUrl')} error={!!errors.logoUrl} helperText={errors.logoUrl?.message ?? 'https:// link to your logo (optional)'} />
+          <LogoField logoUrl={s.data.logoUrl} />
           <Stack direction={{ xs: 'column', sm: 'row' }} gap={2}>
             <TextField label="Brand color" {...register('primaryBrandColor')} error={!!errors.primaryBrandColor} helperText={errors.primaryBrandColor?.message ?? 'Hex, e.g. #1565c0'} />
             <TextField label="Language" {...register('defaultLanguage')} error={!!errors.defaultLanguage} helperText={errors.defaultLanguage?.message ?? 'ISO code, e.g. en'} />

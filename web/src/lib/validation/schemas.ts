@@ -54,7 +54,6 @@ export const userSchema = z.object({
 
 export const settingsSchema = z.object({
   companyName: z.string().trim().min(2, 'Required'),
-  logoUrl: z.string().refine((v) => v === '' || v.startsWith('https://'), 'Must be an https:// link'),
   primaryBrandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Use a hex color like #1565c0'),
   timezone: z.string().min(1),
   defaultLanguage: z.string().regex(/^[a-z]{2}$/, 'Two-letter code, e.g. en'),

@@ -23,11 +23,13 @@ interface Options {
 async function request(path: string, { method = 'GET', body }: Options): Promise<Response> {
   let res: Response;
   try {
+    // A File/Blob (e.g. a logo upload) is sent as-is with its own type; anything else as JSON.
+    const raw = body instanceof Blob;
     res = await fetch(`/api${path}`, {
       method,
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'eventpass' },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      headers: { 'Content-Type': raw ? body.type : 'application/json', 'X-Requested-With': 'eventpass' },
+      body: raw ? body : body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
     throw new ApiError(0, 'NETWORK', 'Cannot reach the server. Check your connection and try again.');
