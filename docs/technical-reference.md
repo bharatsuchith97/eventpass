@@ -284,7 +284,7 @@ One database. Tables marked **company** carry `company_id` and are always querie
 | `company_settings` | `company_id` (primary key), `company_name`, `logo_data` / `logo_mime` (uploaded PNG/JPG, ≤ 512 KB), `primary_brand_color`, `timezone`, `default_language`, contact fields | One row per company; `logo_url` is a leftover, unused |
 | `events` | `company_id`, `name`, `event_code`, venue, `start_datetime`, `end_datetime`, `capacity`, `status`, `banner_url`, `created_by` | Event code unique per company; end after start; creator must be the same company's user |
 | `event_managers` | `company_id`, `event_id`, `user_id` | Event and user must belong to that company |
-| `guests` | `company_id`, names, `email`, `phone`, `company_name`, `category`, `status` (`ACTIVE`/`DELETED`), `notes` | Email unique among a company's **active** guests; delete is a soft delete |
+| `guests` | `company_id`, `external_id` (your own guest ID), names, `email`, `phone`, `company_name`, `category`, `status` (`ACTIVE`/`DELETED`), `notes` | Email, and guest ID (case-insensitive), unique among a company's **active** guests; delete is a soft delete |
 | `tickets` | `company_id`, `event_id`, `guest_id`, `ticket_number` (`EVT-XXXXXX`), `qr_token_hash`, `qr_token_enc`, `status`, `rsvp_status`, `expires_at` | Event and guest from the same company; one live ticket per guest per event; ticket number unique per company; token hash unique |
 | `invitations` | `company_id`, `ticket_id`, `sent`, `sent_at`, `delivery_status`, `opened_at`, `clicked_at` | |
 | `checkins` | `company_id`, `ticket_id`, `event_id`, `guest_id`, `checked_in_at`, `checked_in_by`, `gate`, `device_id`, `method` (`QR`/`MANUAL`) | **`UNIQUE(ticket_id)`**: a ticket can be checked in once, enforced by the database |
@@ -313,8 +313,8 @@ Guest categories: `VIP`, `SPEAKER`, `SPONSOR`, `STAFF`, `ATTENDEE`, `FAMILY`, `O
 ### Guests and CSV import
 
 - Import is two steps: **preview** (validates, returns per-row errors with spreadsheet row numbers) and **commit** (re-validates on the server; you can choose to skip invalid rows).
-- Up to 5,000 rows and 5 MB per file. Required columns: `first_name`, `last_name`, `email`. Common header spellings are recognised (`First Name`, `surname`, `E-mail`, `mobile`, `organisation`, `type`, …).
-- Duplicates are flagged both inside the file and against existing guests (email, and phone where given).
+- Up to 5,000 rows and 5 MB per file. Required columns: `first_name`, `last_name`, `email`. Optional: `guest_id` (also read from `id`, `member_id`, `member_no`, `id_number`, ...), `phone`, `company_name`, `category`, `notes`. Common header spellings are recognised (`First Name`, `surname`, `E-mail`, `mobile`, `organisation`, `type`, …).
+- Duplicates are flagged both inside the file and against existing guests (guest ID, email, and phone where given).
 - The commit can also issue passes for an event and send the invitations in the same step.
 - CSV **export** prefixes cells starting with `=`, `+`, `-`, `@` so spreadsheets don't run them as formulas.
 
@@ -347,7 +347,9 @@ Door phones show **green** (let in), **amber** (already used) or **red** (do not
 ### Reports and dashboard
 
 - Live stats per event (issued, checked in, RSVP counts, arrivals per hour) feed the dashboard charts.
-- Reports: `attendance`, `noshow`, `rsvp`; each as JSON or CSV (`?format=csv`).
+- Reports: `full` (**Complete**: one row per pass with every guest field, notes, event, pass, RSVP, invitation and check-in details), `attendance`, `noshow`, `rsvp`; each as JSON or CSV (`?format=csv`).
+- **Full report across all events:** `GET /api/guests/export-full.csv`, one row per guest per pass (guests without a pass get one row). Event managers only get passes for events they created or manage.
+- **Guest export** (`/api/guests/export.csv`) has every guest field plus pass and check-in counts, with column names the importer accepts, so it can be edited and imported again.
 
 ### Audit log
 
@@ -399,6 +401,7 @@ All routes are under `/api`. Every `POST`/`PUT`/`PATCH`/`DELETE` must send the h
 | POST | `/api/guests/import/preview`, `/api/guests/import/commit` | `guests:manage` |
 | POST | `/api/guests/bulk-delete` | `guests:manage` (up to 500 ids) |
 | GET | `/api/guests/export.csv` | `guests:export` |
+| GET | `/api/guests/export-full.csv` | `guests:export` (complete report across events) |
 | GET / PATCH / DELETE | `/api/guests/:id` | `guests:manage` |
 | POST | `/api/checkin` | `checkin:scan` (`{token or scanned URL, eventId, gate, deviceId}`) |
 | POST | `/api/checkin/manual` | `checkin:scan` |

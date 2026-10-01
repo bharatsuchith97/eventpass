@@ -14,7 +14,7 @@ interface CommitResult {
   tickets?: { issued: number; invited: number; failed: number };
 }
 
-const TEMPLATE = 'first_name,last_name,email,phone,company_name,category\nAda,Lovelace,ada@example.com,+15550000001,Analytical Engines,VIP\n';
+const TEMPLATE = 'guest_id,first_name,last_name,email,phone,company_name,category,notes\nM-0042,Ada,Lovelace,ada@example.com,+15550000001,Analytical Engines,VIP,Vegetarian\n';
 const MAX_BYTES = 5_000_000;
 
 export function ImportGuestsPage() {
@@ -100,7 +100,7 @@ export function ImportGuestsPage() {
             <CardContent>
               <Stack gap={2}>
                 <Typography>
-                  Required columns: <b>first_name, last_name, email</b>. Optional: phone, company_name, category (VIP, SPEAKER, SPONSOR, STAFF, ATTENDEE, FAMILY, OTHER).
+                  Required columns: <b>first_name, last_name, email</b>. Optional: guest_id (your own unique ID, e.g. a member number), phone, company_name, category (VIP, SPEAKER, SPONSOR, STAFF, ATTENDEE, FAMILY, OTHER), notes.
                 </Typography>
                 <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center">
                   <input ref={file} type="file" accept=".csv,text/csv,.txt" hidden onChange={(e) => { void onFile(e.target.files?.[0]); e.target.value = ''; }} />
@@ -162,15 +162,18 @@ export function ImportGuestsPage() {
                       <TableContainer sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
                         <Table size="small">
                           <TableHead>
-                            <TableRow><TableCell>Row</TableCell><TableCell>Name</TableCell><TableCell>Email</TableCell><TableCell>Category</TableCell></TableRow>
+                            <TableRow><TableCell>Row</TableCell><TableCell>ID</TableCell><TableCell>Name</TableCell><TableCell>Email</TableCell><TableCell>Phone</TableCell><TableCell>Category</TableCell><TableCell>Notes</TableCell></TableRow>
                           </TableHead>
                           <TableBody>
                             {p.sample.map((s) => (
                               <TableRow key={s.row}>
                                 <TableCell>{s.row}</TableCell>
+                                <TableCell>{s.externalId ?? '-'}</TableCell>
                                 <TableCell>{s.firstName} {s.lastName}</TableCell>
                                 <TableCell>{s.email}</TableCell>
+                                <TableCell>{s.phone ?? '-'}</TableCell>
                                 <TableCell>{s.category}</TableCell>
+                                <TableCell>{s.notes ?? '-'}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>

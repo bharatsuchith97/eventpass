@@ -128,3 +128,18 @@ export function GuestAvatar({ guest, size = 36 }: { guest: { firstName: string; 
 export const CategoryChip = ({ category }: { category: GuestCategory }) => (
   <Chip size="small" label={category} sx={{ bgcolor: CATEGORY_COLOR[category], color: '#fff', fontWeight: 600 }} />
 );
+
+/** Long free text (notes) in a table cell: up to three lines, the full text on hover. */
+export function NotesCell({ text }: { text: string | null | undefined }) {
+  if (!text) return <>-</>;
+  return (
+    <Typography variant="body2" title={text} sx={{ maxWidth: 260, minWidth: 140, whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+      {text}
+    </Typography>
+  );
+}
+
+/** IDs and ticket numbers: monospaced, '-' when empty. */
+export function MonoCell({ value }: { value: string | null | undefined }) {
+  return <Typography variant="body2" sx={{ fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{value || '-'}</Typography>;
+}

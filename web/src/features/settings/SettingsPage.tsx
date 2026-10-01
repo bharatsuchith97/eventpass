@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Alert, Box, Button, Card, CardContent, MenuItem, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { api, qs } from '../../lib/api/client';
 import { useMe, useSettings } from '../../lib/auth/session';
 import { formatDateTime } from '../../lib/utils/format';
@@ -44,9 +44,9 @@ function LogoField({ logoUrl }: { logoUrl: string | null }) {
     <Stack gap={1}>
       <Typography variant="body2" fontWeight={600}>Logo</Typography>
       <Stack direction="row" gap={2} alignItems="center" flexWrap="wrap">
-        <Box sx={{ width: 160, height: 64, border: 1, borderColor: 'divider', borderRadius: 2, display: 'grid', placeItems: 'center', bgcolor: '#fff', p: 1 }}>
+        <Box sx={{ width: 160, height: 64, flexShrink: 0, border: 1, borderColor: 'divider', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#fff', p: 1, overflow: 'hidden' }}>
           {logoUrl
-            ? <Box component="img" src={logoUrl} alt="Company logo" sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+            ? <Box component="img" src={logoUrl} alt="Company logo" sx={{ display: 'block', maxWidth: 142, maxHeight: 46, width: 'auto', height: 'auto', objectFit: 'contain' }} />
             : <Typography variant="caption" color="text.secondary">No logo yet</Typography>}
         </Box>
         <Stack direction="row" gap={1}>
@@ -64,11 +64,47 @@ function LogoField({ logoUrl }: { logoUrl: string | null }) {
   );
 }
 
+const BRAND_PRESETS = ['#1565c0', '#2e7d32', '#c62828', '#6a1b9a', '#ef6c00', '#00838f', '#ad1457', '#37474f'];
+
+/** Brand colour: a colour picker plus a few ready-made colours. Used for passes, the guest pass page and the app. */
+function BrandColorField({ value: raw, onChange, error }: { value: string | undefined; onChange: (v: string) => void; error?: string }) {
+  // The form fills in its values after the first render, so the value can briefly be undefined.
+  const value = raw ?? '';
+  return (
+    <Stack gap={1} sx={{ flex: 1, minWidth: 0 }}>
+      <Typography variant="body2" fontWeight={600}>Brand colour</Typography>
+      <Stack direction="row" gap={1.5} alignItems="center" flexWrap="wrap">
+        <Box
+          component="input"
+          type="color"
+          aria-label="Pick brand colour"
+          value={/^#[0-9a-fA-F]{6}$/.test(value) ? value : '#1565c0'}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+          sx={{ width: 48, height: 40, p: 0, border: 1, borderColor: 'divider', borderRadius: 1.5, bgcolor: 'transparent', cursor: 'pointer' }}
+        />
+        <Stack direction="row" gap={0.75}>
+          {BRAND_PRESETS.map((c) => (
+            <Box
+              key={c}
+              component="button"
+              type="button"
+              aria-label={`Use ${c}`}
+              onClick={() => onChange(c)}
+              sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: c, cursor: 'pointer', border: 2, borderColor: value.toLowerCase() === c ? 'text.primary' : 'transparent', outline: 'none', '&:focus-visible': { boxShadow: 3 } }}
+            />
+          ))}
+        </Stack>
+      </Stack>
+      <Typography variant="caption" color={error ? 'error' : 'text.secondary'}>{error ?? 'Used on passes, the guest pass page and in the app.'}</Typography>
+    </Stack>
+  );
+}
+
 function CompanyForm() {
   const qc = useQueryClient();
   const s = useSettings();
   const { toast, toastNode } = useToast();
-  const { register, handleSubmit, formState: { errors, isDirty }, setError } = useForm<SettingsFormValues>({
+  const { register, control, handleSubmit, formState: { errors, isDirty }, setError } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     values: s.data ? {
       companyName: s.data.companyName, primaryBrandColor: s.data.primaryBrandColor, timezone: s.data.timezone,
@@ -88,10 +124,8 @@ function CompanyForm() {
           {m.error && <Alert severity="error">{m.error.message}</Alert>}
           <TextField label="Company name" {...register('companyName')} error={!!errors.companyName} helperText={errors.companyName?.message} />
           <LogoField logoUrl={s.data.logoUrl} />
-          <Stack direction={{ xs: 'column', sm: 'row' }} gap={2}>
-            <TextField label="Brand color" {...register('primaryBrandColor')} error={!!errors.primaryBrandColor} helperText={errors.primaryBrandColor?.message ?? 'Hex, e.g. #1565c0'} />
-            <TextField label="Language" {...register('defaultLanguage')} error={!!errors.defaultLanguage} helperText={errors.defaultLanguage?.message ?? 'ISO code, e.g. en'} />
-          </Stack>
+          <Controller control={control} name="primaryBrandColor" render={({ field }) => <BrandColorField value={field.value} onChange={field.onChange} error={errors.primaryBrandColor?.message} />} />
+          <TextField label="Language" {...register('defaultLanguage')} error={!!errors.defaultLanguage} helperText={errors.defaultLanguage?.message ?? 'ISO code, e.g. en'} />
           <TextField select label="Timezone" defaultValue={s.data.timezone} {...register('timezone')} error={!!errors.timezone} helperText={errors.timezone?.message ?? 'Used to display event times'} SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 320 } } } }}>
             {(ZONES.includes(s.data.timezone) ? ZONES : [s.data.timezone, ...ZONES]).map((z) => <MenuItem key={z} value={z}>{z}</MenuItem>)}
           </TextField>

@@ -108,16 +108,22 @@ export async function listEventTickets(ctx: Ctx, eventId: string, query: unknown
   if (q.search) {
     params.push(`${q.search.toLowerCase().replace(/[\\%_]/g, '\\$&')}%`);
     const p = `$${params.length}`;
-    where.push(`(lower(g.first_name) LIKE ${p} OR lower(g.last_name) LIKE ${p} OR lower(g.email) LIKE ${p} OR lower(g.first_name || ' ' || g.last_name) LIKE ${p} OR lower(t.ticket_number) LIKE ${p})`);
+    where.push(`(lower(g.first_name) LIKE ${p} OR lower(g.last_name) LIKE ${p} OR lower(g.email) LIKE ${p} OR lower(g.first_name || ' ' || g.last_name) LIKE ${p}
+      OR lower(t.ticket_number) LIKE ${p} OR lower(g.external_id) LIKE ${p})`);
   }
   params.push(q.pageSize, (q.page - 1) * q.pageSize);
   const r = await ctx.db.query(
-    `SELECT t.id, t.ticket_number AS "ticketNumber", t.status, t.rsvp_status AS "rsvpStatus", t.issued_at AS "issuedAt",
-            g.id AS "guestId", g.first_name AS "firstName", g.last_name AS "lastName", g.email, g.company_name AS "companyName", g.category,
-            c.checked_in_at AS "checkedInAt", c.gate,
-            (SELECT i.delivery_status FROM invitations i WHERE i.ticket_id = t.id ORDER BY i.created_at DESC LIMIT 1) AS "invitationStatus",
+    `SELECT t.id, t.ticket_number AS "ticketNumber", t.status, t.rsvp_status AS "rsvpStatus", t.rsvp_at AS "rsvpAt", t.issued_at AS "issuedAt",
+            g.id AS "guestId", g.external_id AS "externalId", g.first_name AS "firstName", g.last_name AS "lastName", g.email, g.phone,
+            g.company_name AS "companyName", g.category, g.notes,
+            c.checked_in_at AS "checkedInAt", c.gate, c.method AS "checkinMethod", cu.email AS "checkedInBy",
+            inv.delivery_status AS "invitationStatus", inv.sent_at AS "invitedAt", inv.opened_at AS "openedAt",
             count(*) OVER()::int AS total
-       FROM tickets t JOIN guests g ON g.id = t.guest_id LEFT JOIN checkins c ON c.ticket_id = t.id
+       FROM tickets t JOIN guests g ON g.id = t.guest_id
+       LEFT JOIN checkins c ON c.ticket_id = t.id
+       LEFT JOIN users cu ON cu.id = c.checked_in_by
+       LEFT JOIN LATERAL (SELECT i.delivery_status, i.sent_at, i.opened_at FROM invitations i
+                           WHERE i.ticket_id = t.id ORDER BY i.created_at DESC LIMIT 1) inv ON true
       WHERE ${where.join(' AND ')}
       ORDER BY lower(g.last_name), lower(g.first_name) LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params,
@@ -338,9 +344,12 @@ export async function listInvitations(ctx: Ctx, query: { eventId?: string; page:
   params.push(query.pageSize, (query.page - 1) * query.pageSize);
   const r = await ctx.db.query(
     `SELECT i.id, i.sent, i.sent_at AS "sentAt", i.delivery_status AS "deliveryStatus", i.opened_at AS "openedAt", i.clicked_at AS "clickedAt",
-            e.id AS "eventId", e.name AS "eventName", g.first_name AS "firstName", g.last_name AS "lastName", g.email, t.ticket_number AS "ticketNumber",
+            e.id AS "eventId", e.name AS "eventName", g.external_id AS "externalId", g.first_name AS "firstName", g.last_name AS "lastName",
+            g.email, g.phone, g.company_name AS "companyName", g.category,
+            t.ticket_number AS "ticketNumber", t.status AS "ticketStatus", t.rsvp_status AS "rsvpStatus", c.checked_in_at AS "checkedInAt",
             count(*) OVER()::int AS total
        FROM invitations i JOIN events e ON e.id = i.event_id JOIN guests g ON g.id = i.guest_id JOIN tickets t ON t.id = i.ticket_id
+       LEFT JOIN checkins c ON c.ticket_id = i.ticket_id
       WHERE ${where} ORDER BY i.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params,
   );

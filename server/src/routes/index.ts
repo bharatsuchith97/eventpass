@@ -141,6 +141,9 @@ export function apiRouter(): Router {
     const { ids } = parse(z.object({ ids: z.array(z.string().uuid()).min(1).max(500) }), req.body);
     res.json(await guests.deleteGuests(ctxOf(req), ids));
   }));
+  r.get('/guests/export-full.csv', requirePermission('guests:export'), wrap(async (req, res) => {
+    res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="full-report.csv"', 'Cache-Control': 'no-store' }).send(await reports.fullExportCsv(ctxOf(req)));
+  }));
   r.get('/guests/export.csv', requirePermission('guests:export'), wrap(async (req, res) => {
     res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="guests.csv"', 'Cache-Control': 'no-store' }).send(await guests.exportGuestsCsv(ctxOf(req)));
   }));

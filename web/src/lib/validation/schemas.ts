@@ -35,6 +35,7 @@ export const eventSchema = z
 export type EventFormValues = z.infer<typeof eventSchema>;
 
 export const guestSchema = z.object({
+  externalId: z.string().trim().max(50, 'Use at most 50 characters').refine((v) => v === '' || /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(v), 'Use letters, numbers, - _ / or .'),
   firstName: z.string().trim().min(1, 'Required').max(100),
   lastName: z.string().trim().min(1, 'Required').max(100),
   email: z.string().trim().email('Enter a valid email'),

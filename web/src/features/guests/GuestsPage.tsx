@@ -12,7 +12,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import { api, download, qs } from '../../lib/api/client';
 import { errorMessage, fullName } from '../../lib/utils/format';
 import { guestSchema, type GuestFormValues } from '../../lib/validation/schemas';
-import { CategoryChip, ConfirmDialog, DataTable, ErrorAlert, FilterBar, GuestAvatar, PageHeader, SearchField, useToast, type Column } from '../../components/ui';
+import { CategoryChip, ConfirmDialog, DataTable, ErrorAlert, FilterBar, GuestAvatar, MonoCell, NotesCell, PageHeader, SearchField, useToast, type Column } from '../../components/ui';
 import { GUEST_CATEGORIES, type Guest, type Paged } from '../../types';
 import { applyServerErrors } from '../auth/AuthPages';
 
@@ -21,13 +21,13 @@ function GuestDialog({ guest, open, onClose }: { guest?: Guest; open: boolean; o
   const { register, control, handleSubmit, formState: { errors }, setError, reset } = useForm<GuestFormValues>({
     resolver: zodResolver(guestSchema),
     values: {
-      firstName: guest?.firstName ?? '', lastName: guest?.lastName ?? '', email: guest?.email ?? '', phone: guest?.phone ?? '',
+      externalId: guest?.externalId ?? '', firstName: guest?.firstName ?? '', lastName: guest?.lastName ?? '', email: guest?.email ?? '', phone: guest?.phone ?? '',
       companyName: guest?.companyName ?? '', category: guest?.category ?? 'ATTENDEE', notes: guest?.notes ?? '',
     },
   });
   const save = useMutation({
     mutationFn: (v: GuestFormValues) => {
-      const body = { ...v, phone: v.phone.trim() || null, companyName: v.companyName.trim() || null, notes: v.notes.trim() || null };
+      const body = { ...v, externalId: v.externalId.trim() || null, phone: v.phone.trim() || null, companyName: v.companyName.trim() || null, notes: v.notes.trim() || null };
       return guest ? api(`/guests/${guest.id}`, { method: 'PATCH', body }) : api('/guests', { method: 'POST', body });
     },
     onSuccess: () => {
@@ -45,6 +45,7 @@ function GuestDialog({ guest, open, onClose }: { guest?: Guest; open: boolean; o
         <DialogContent>
           <Stack gap={2} pt={1}>
             {save.error && <Alert severity="error">{save.error.message}</Alert>}
+            <TextField label="Guest ID (optional)" {...register('externalId')} error={!!errors.externalId} helperText={errors.externalId?.message ?? 'Your own reference, e.g. a member or registration number. Must be unique.'} />
             <Stack direction={{ xs: 'column', sm: 'row' }} gap={2}>
               <TextField label="First name" autoFocus {...register('firstName')} error={!!errors.firstName} helperText={errors.firstName?.message} />
               <TextField label="Last name" {...register('lastName')} error={!!errors.lastName} helperText={errors.lastName?.message} />
@@ -102,12 +103,17 @@ export function GuestsPage() {
 
   const columns: Column<Guest>[] = [
     { key: 'sel', header: '', width: 48, render: (g) => <Checkbox size="small" checked={selected.has(g.id)} onChange={() => toggle(g.id)} inputProps={{ 'aria-label': `Select ${fullName(g)}` }} /> },
+    { key: 'xid', header: 'ID', render: (g) => <MonoCell value={g.externalId} /> },
     { key: 'name', header: 'Guest', render: (g) => (
       <Stack direction="row" gap={1.5} alignItems="center"><GuestAvatar guest={g} size={32} /><Box minWidth={0}><Typography variant="body2" fontWeight={600} noWrap>{fullName(g)}</Typography><Typography variant="caption" color="text.secondary" noWrap>{g.email}</Typography></Box></Stack>
     ) },
     { key: 'company', header: 'Company', hideOnMobile: true, render: (g) => g.companyName ?? '-' },
     { key: 'phone', header: 'Phone', hideOnMobile: true, render: (g) => g.phone ?? '-' },
     { key: 'cat', header: 'Category', render: (g) => <CategoryChip category={g.category} /> },
+    { key: 'notes', header: 'Notes', hideOnMobile: true, render: (g) => <NotesCell text={g.notes} /> },
+    { key: 'linked', header: 'Passes', hideOnMobile: true, render: (g) => (
+      <Typography variant="body2" noWrap>{g.passes ?? 0} pass{g.passes === 1 ? '' : 'es'}<br /><Typography component="span" variant="caption" color="text.secondary">{g.checkIns ?? 0} check-in{g.checkIns === 1 ? '' : 's'}</Typography></Typography>
+    ) },
     { key: 'act', header: '', align: 'right', render: (g) => (
       <Stack direction="row" justifyContent="flex-end">
         <IconButton size="small" aria-label={`Edit ${fullName(g)}`} onClick={() => setEditing(g)}><EditIcon fontSize="small" /></IconButton>
@@ -123,14 +129,15 @@ export function GuestsPage() {
         subtitle="Everyone you can invite, across all events"
         actions={
           <>
-            <Button startIcon={<DownloadIcon />} onClick={() => download('/guests/export.csv', 'guests.csv').catch((e: unknown) => toast(errorMessage(e), 'error'))}>Export</Button>
+            <Button startIcon={<DownloadIcon />} onClick={() => download('/guests/export.csv', 'guests.csv').catch((e: unknown) => toast(errorMessage(e), 'error'))}>Export guests</Button>
+            <Button startIcon={<DownloadIcon />} onClick={() => download('/guests/export-full.csv', 'full-report.csv').catch((e: unknown) => toast(errorMessage(e), 'error'))}>Full report</Button>
             <Button startIcon={<UploadIcon />} onClick={() => nav('/guests/import')}>Import CSV</Button>
             <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditing('new')}>Add guest</Button>
           </>
         }
       />
       <FilterBar>
-        <SearchField placeholder="Search name, email or phone" onChange={(v) => { setSearch(v); setPage(1); }} />
+        <SearchField placeholder="Search name, email, phone or ID" onChange={(v) => { setSearch(v); setPage(1); }} />
         <TextField select label="Category" value={category} onChange={(e) => { setCategory(e.target.value); setPage(1); }} sx={{ minWidth: 150, maxWidth: 200 }}>
           <MenuItem value="">All</MenuItem>
           {GUEST_CATEGORIES.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}

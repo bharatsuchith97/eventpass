@@ -67,7 +67,11 @@ function SearchTab({ eventId, checkIn }: { eventId: string; checkIn: ReturnType<
                 <Box flexGrow={1} minWidth={0}>
                   <Typography fontWeight={700} noWrap>{fullName(h)}</Typography>
                   <Typography variant="body2" color="text.secondary" noWrap>{h.email}{h.companyName ? ` - ${h.companyName}` : ''}</Typography>
-                  <Stack direction="row" gap={1} mt={0.5}><CategoryChip category={h.category} /><Typography variant="caption" sx={{ fontFamily: 'monospace' }}>{h.ticketNumber}</Typography></Stack>
+                  <Stack direction="row" gap={1} mt={0.5} alignItems="center" flexWrap="wrap">
+                    <CategoryChip category={h.category} />
+                    <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>{h.ticketNumber}</Typography>
+                    {h.externalId && <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>ID {h.externalId}</Typography>}
+                  </Stack>
                 </Box>
                 {h.checkedInAt || h.status === 'USED' ? (
                   <StatusBadge label={`In ${formatTime(h.checkedInAt)}`} tone="success" />
@@ -91,9 +95,14 @@ function RecentTab({ eventId }: { eventId: string }) {
   });
   const columns: Column<CheckInRow>[] = [
     { key: 't', header: 'Time', render: (r) => formatTime(r.checkedInAt) },
+    { key: 'xid', header: 'ID', hideOnMobile: true, render: (r) => r.externalId ?? '-' },
     { key: 'g', header: 'Guest', render: (r) => <b>{fullName(r)}</b> },
+    { key: 'co', header: 'Company', hideOnMobile: true, render: (r) => r.companyName ?? '-' },
     { key: 'c', header: 'Category', render: (r) => <CategoryChip category={r.category} /> },
+    { key: 'tk', header: 'Ticket', hideOnMobile: true, render: (r) => r.ticketNumber },
     { key: 'gate', header: 'Gate', hideOnMobile: true, render: (r) => r.gate ?? '-' },
+    { key: 'm', header: 'Method', hideOnMobile: true, render: (r) => (r.method === 'MANUAL' ? 'Manual' : 'QR scan') },
+    { key: 'by', header: 'By', hideOnMobile: true, render: (r) => r.checkedInBy },
   ];
   return <DataTable columns={columns} rows={q.data?.items ?? []} rowKey={(r) => r.id} loading={q.isLoading} emptyTitle="No check-ins yet" />;
 }

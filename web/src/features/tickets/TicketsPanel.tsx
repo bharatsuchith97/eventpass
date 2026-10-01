@@ -9,9 +9,9 @@ import SendIcon from '@mui/icons-material/Send';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { download } from '../../lib/api/client';
-import { errorMessage, formatTime, fullName } from '../../lib/utils/format';
+import { errorMessage, formatDateTime, formatTime, fullName } from '../../lib/utils/format';
 import {
-  CategoryChip, ConfirmDialog, DataTable, ErrorAlert, FilterBar, GuestAvatar, PassPreview, SearchField, StatusBadge, TicketStatusBadge, useToast, type Column,
+  CategoryChip, ConfirmDialog, DataTable, ErrorAlert, FilterBar, GuestAvatar, MonoCell, NotesCell, PassPreview, SearchField, StatusBadge, TicketStatusBadge, useToast, type Column,
 } from '../../components/ui';
 import { useSettings } from '../../lib/auth/session';
 import type { EventItem, Guest, TicketRow } from '../../types';
@@ -195,12 +195,29 @@ export function TicketsPanel({ event, canWrite }: { event: EventItem; canWrite: 
         </Box>
       </Stack>
     ) },
+    { key: 'xid', header: 'ID', hideOnMobile: true, render: (r) => <MonoCell value={r.externalId} /> },
+    { key: 'phone', header: 'Phone', hideOnMobile: true, render: (r) => <Typography variant="body2" noWrap>{r.phone ?? '-'}</Typography> },
+    { key: 'company', header: 'Company', hideOnMobile: true, render: (r) => r.companyName ?? '-' },
     { key: 'category', header: 'Category', hideOnMobile: true, render: (r) => <CategoryChip category={r.category} /> },
-    { key: 'ticket', header: 'Ticket', hideOnMobile: true, render: (r) => <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{r.ticketNumber}</Typography> },
+    { key: 'notes', header: 'Notes', hideOnMobile: true, render: (r) => <NotesCell text={r.notes} /> },
+    { key: 'ticket', header: 'Ticket', hideOnMobile: true, render: (r) => <MonoCell value={r.ticketNumber} /> },
     { key: 'status', header: 'Status', render: (r) => <TicketStatusBadge status={r.status} /> },
-    { key: 'rsvp', header: 'RSVP', hideOnMobile: true, render: (r) => <StatusBadge label={r.rsvpStatus} tone={RSVP_TONE[r.rsvpStatus]} /> },
-    { key: 'invite', header: 'Invitation', hideOnMobile: true, render: (r) => <Typography variant="body2" color="text.secondary">{r.invitationStatus ? r.invitationStatus.toLowerCase() : 'not sent'}</Typography> },
-    { key: 'checkin', header: 'Checked in', hideOnMobile: true, render: (r) => (r.checkedInAt ? `${formatTime(r.checkedInAt)}${r.gate ? ` (${r.gate})` : ''}` : '-') },
+    { key: 'rsvp', header: 'RSVP', hideOnMobile: true, render: (r) => (
+      <Stack gap={0.5} alignItems="flex-start"><StatusBadge label={r.rsvpStatus} tone={RSVP_TONE[r.rsvpStatus]} />{r.rsvpAt && <Typography variant="caption" color="text.secondary" noWrap>{formatDateTime(r.rsvpAt)}</Typography>}</Stack>
+    ) },
+    { key: 'invite', header: 'Invitation', hideOnMobile: true, render: (r) => (
+      <Box>
+        <Typography variant="body2" noWrap>{r.invitationStatus ? r.invitationStatus.toLowerCase() : 'not sent'}</Typography>
+        {r.invitedAt && <Typography variant="caption" color="text.secondary" display="block" noWrap>Sent {formatDateTime(r.invitedAt)}</Typography>}
+        {r.openedAt && <Typography variant="caption" color="text.secondary" display="block" noWrap>Opened {formatDateTime(r.openedAt)}</Typography>}
+      </Box>
+    ) },
+    { key: 'checkin', header: 'Checked in', hideOnMobile: true, render: (r) => (r.checkedInAt ? (
+      <Box>
+        <Typography variant="body2" noWrap>{formatTime(r.checkedInAt)}{r.gate ? ` (${r.gate})` : ''}</Typography>
+        <Typography variant="caption" color="text.secondary" display="block" noWrap>{r.checkinMethod === 'MANUAL' ? 'Manual' : 'QR scan'}{r.checkedInBy ? ` by ${r.checkedInBy}` : ''}</Typography>
+      </Box>
+    ) : '-') },
     { key: 'actions', header: '', align: 'right', render: (r) => canWrite && r.status === 'ACTIVE' && (
       <Stack direction="row" justifyContent="flex-end">
         <Tooltip title="Show pass"><IconButton size="small" onClick={() => setPassRow(r)} aria-label="Show pass"><QrCode2Icon fontSize="small" /></IconButton></Tooltip>
@@ -214,7 +231,7 @@ export function TicketsPanel({ event, canWrite }: { event: EventItem; canWrite: 
     <>
       <Stack direction={{ xs: 'column', xl: 'row' }} justifyContent="space-between" gap={1.5} mb={2}>
         <FilterBar>
-          <SearchField placeholder="Search guests or ticket #" onChange={(search) => setF((p) => ({ ...p, search, page: 1 }))} />
+          <SearchField placeholder="Search name, email, ID or ticket #" onChange={(search) => setF((p) => ({ ...p, search, page: 1 }))} />
           <TextField select label="RSVP" value={f.rsvp} onChange={(e) => setF((p) => ({ ...p, rsvp: e.target.value, page: 1 }))} sx={{ minWidth: 130 }}>
             <MenuItem value="">All</MenuItem><MenuItem value="PENDING">Pending</MenuItem><MenuItem value="CONFIRMED">Confirmed</MenuItem><MenuItem value="DECLINED">Declined</MenuItem>
           </TextField>

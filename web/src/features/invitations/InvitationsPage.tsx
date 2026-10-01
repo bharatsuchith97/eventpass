@@ -3,7 +3,7 @@ import { Button, MenuItem, TextField } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, qs } from '../../lib/api/client';
 import { errorMessage, formatDateTime, fullName } from '../../lib/utils/format';
-import { DataTable, ErrorAlert, FilterBar, PageHeader, StatusBadge, useToast, type Column } from '../../components/ui';
+import { CategoryChip, DataTable, ErrorAlert, FilterBar, MonoCell, PageHeader, StatusBadge, TicketStatusBadge, useToast, type Column } from '../../components/ui';
 import { useEvents } from '../events/api';
 import type { InvitationRow, Paged } from '../../types';
 
@@ -30,12 +30,19 @@ export function InvitationsPage() {
     onError: (e) => toast(errorMessage(e), 'error'),
   });
   const columns: Column<InvitationRow>[] = [
+    { key: 'xid', header: 'ID', hideOnMobile: true, render: (r) => <MonoCell value={r.externalId} /> },
     { key: 'guest', header: 'Guest', render: (r) => <><b>{fullName(r)}</b><br /><small>{r.email}</small></> },
+    { key: 'phone', header: 'Phone', hideOnMobile: true, render: (r) => r.phone ?? '-' },
+    { key: 'company', header: 'Company', hideOnMobile: true, render: (r) => r.companyName ?? '-' },
+    { key: 'category', header: 'Category', hideOnMobile: true, render: (r) => <CategoryChip category={r.category} /> },
     { key: 'event', header: 'Event', hideOnMobile: true, render: (r) => r.eventName },
-    { key: 'ticket', header: 'Ticket', hideOnMobile: true, render: (r) => r.ticketNumber },
-    { key: 'status', header: 'Status', render: (r) => <StatusBadge label={r.deliveryStatus} tone={TONE[r.deliveryStatus] ?? 'default'} /> },
+    { key: 'ticket', header: 'Ticket', hideOnMobile: true, render: (r) => <MonoCell value={r.ticketNumber} /> },
+    { key: 'pass', header: 'Pass', hideOnMobile: true, render: (r) => <TicketStatusBadge status={r.ticketStatus} /> },
+    { key: 'status', header: 'Invitation', render: (r) => <StatusBadge label={r.deliveryStatus} tone={TONE[r.deliveryStatus] ?? 'default'} /> },
     { key: 'sent', header: 'Sent', hideOnMobile: true, render: (r) => formatDateTime(r.sentAt) },
     { key: 'opened', header: 'Opened', hideOnMobile: true, render: (r) => formatDateTime(r.openedAt) },
+    { key: 'rsvp', header: 'RSVP', hideOnMobile: true, render: (r) => r.rsvpStatus.toLowerCase() },
+    { key: 'checkin', header: 'Checked in', hideOnMobile: true, render: (r) => formatDateTime(r.checkedInAt) },
   ];
   return (
     <>

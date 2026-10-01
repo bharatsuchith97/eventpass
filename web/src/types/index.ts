@@ -53,6 +53,7 @@ export interface EventItem {
 
 export interface Guest {
   id: string;
+  externalId: string | null;
   firstName: string;
   lastName: string;
   email: string;
@@ -60,6 +61,9 @@ export interface Guest {
   companyName: string | null;
   category: GuestCategory;
   notes: string | null;
+  /** Linked data: live passes and check-ins across all events. */
+  passes?: number;
+  checkIns?: number;
 }
 
 export interface Paged<T> {
@@ -72,15 +76,24 @@ export interface TicketRow {
   ticketNumber: string;
   status: TicketStatus;
   rsvpStatus: RsvpStatus;
+  rsvpAt: string | null;
+  issuedAt: string;
   guestId: string;
+  externalId: string | null;
   firstName: string;
   lastName: string;
   email: string;
+  phone: string | null;
   companyName: string | null;
   category: GuestCategory;
+  notes: string | null;
   checkedInAt: string | null;
   gate: string | null;
+  checkinMethod: 'QR' | 'MANUAL' | null;
+  checkedInBy: string | null;
   invitationStatus: string | null;
+  invitedAt: string | null;
+  openedAt: string | null;
 }
 
 export interface EventStats {
@@ -106,6 +119,7 @@ export interface TeamUser {
 }
 
 export interface Guestish {
+  externalId?: string | null;
   firstName: string;
   lastName: string;
   category: GuestCategory;
@@ -126,9 +140,11 @@ export interface CheckInRow {
   checkedInAt: string;
   gate: string | null;
   method: 'QR' | 'MANUAL';
+  externalId: string | null;
   firstName: string;
   lastName: string;
   category: GuestCategory;
+  companyName: string | null;
   ticketNumber: string;
   checkedInBy: string;
 }
@@ -137,6 +153,7 @@ export interface SearchHit {
   ticketId: string;
   ticketNumber: string;
   status: TicketStatus;
+  externalId: string | null;
   firstName: string;
   lastName: string;
   email: string;
@@ -146,7 +163,7 @@ export interface SearchHit {
 }
 
 export interface Report {
-  kind: 'attendance' | 'noshow' | 'rsvp';
+  kind: 'full' | 'attendance' | 'noshow' | 'rsvp';
   columns: { key: string; label: string }[];
   rows: Record<string, string | number | null>[];
   summary?: Record<string, number>;
@@ -157,7 +174,7 @@ export interface ImportPreview {
   validRows: number;
   invalidRows: number;
   errors: { row: number; field: string; message: string }[];
-  sample: { row: number; firstName: string; lastName: string; email: string; phone: string | null; category: GuestCategory }[];
+  sample: { row: number; externalId: string | null; firstName: string; lastName: string; email: string; phone: string | null; category: GuestCategory; notes: string | null }[];
 }
 
 export interface InvitationRow {
@@ -168,10 +185,17 @@ export interface InvitationRow {
   openedAt: string | null;
   eventId: string;
   eventName: string;
+  externalId: string | null;
   firstName: string;
   lastName: string;
   email: string;
+  phone: string | null;
+  companyName: string | null;
+  category: GuestCategory;
   ticketNumber: string;
+  ticketStatus: TicketStatus;
+  rsvpStatus: RsvpStatus;
+  checkedInAt: string | null;
 }
 
 export interface AuditRow {

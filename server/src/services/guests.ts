@@ -16,7 +16,15 @@ const phoneSchema = z
   .refine((p) => p === '' || /^\+?\d{6,15}$/.test(p), 'Invalid phone number')
   .transform((p) => (p === '' ? null : p));
 
+/** Optional ID of the company's own (member number, staff ID, ...). */
+export const externalIdSchema = z
+  .string()
+  .trim()
+  .max(50, 'Use at most 50 characters')
+  .refine((v) => v === '' || /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(v), 'Use letters, numbers, - _ / or .');
+
 export const guestSchema = z.object({
+  externalId: externalIdSchema.nullish().transform((v) => v || null),
   firstName: z.string().trim().min(1, 'Missing first name').max(100),
   lastName: z.string().trim().min(1, 'Missing last name').max(100),
   email: z.string().trim().toLowerCase().min(1, 'Missing email').email('Invalid email').max(254),
@@ -27,8 +35,21 @@ export const guestSchema = z.object({
 });
 export type GuestInput = z.infer<typeof guestSchema>;
 
-const COLS = `id, first_name AS "firstName", last_name AS "lastName", email, phone, company_name AS "companyName",
-  category, notes, created_at AS "createdAt", updated_at AS "updatedAt"`;
+const COLS = `id, external_id AS "externalId", first_name AS "firstName", last_name AS "lastName", email, phone,
+  company_name AS "companyName", category, notes, created_at AS "createdAt", updated_at AS "updatedAt"`;
+
+/** Linked data shown next to each guest: live passes and check-ins across all events. */
+const LINKED = `(SELECT count(*) FROM tickets t WHERE t.guest_id = guests.id AND t.status <> 'CANCELLED')::int AS "passes",
+  (SELECT count(*) FROM checkins c WHERE c.guest_id = guests.id)::int AS "checkIns"`;
+
+/** Turns a unique-index violation into a message about the field that clashed. */
+function duplicateGuest(e: unknown): AppError | null {
+  const err = e as { code?: string; constraint?: string };
+  if (err.code !== '23505') return null;
+  return err.constraint === 'guests_external_id_active_key'
+    ? new AppError('CONFLICT', 409, 'A guest with this ID already exists', { issues: [{ field: 'externalId', message: 'Already used by another guest' }] })
+    : new AppError('CONFLICT', 409, 'A guest with this email already exists', { issues: [{ field: 'email', message: 'Already used by another guest' }] });
+}
 
 const likeEscape = (s: string) => s.replace(/[\\%_]/g, '\\$&');
 
@@ -44,12 +65,12 @@ export async function listGuests(ctx: Ctx, q: { search?: string; category?: stri
     const p = `$${params.length}`;
     where.push(
       `(lower(first_name) LIKE ${p} OR lower(last_name) LIKE ${p} OR lower(email) LIKE ${p}
-        OR lower(first_name || ' ' || last_name) LIKE ${p} OR phone LIKE ${p})`,
+        OR lower(first_name || ' ' || last_name) LIKE ${p} OR phone LIKE ${p} OR lower(external_id) LIKE ${p})`,
     );
   }
   params.push(q.pageSize, (q.page - 1) * q.pageSize);
   const r = await ctx.db.query(
-    `SELECT ${COLS}, count(*) OVER()::int AS total FROM guests WHERE ${where.join(' AND ')}
+    `SELECT ${COLS}, ${LINKED}, count(*) OVER()::int AS total FROM guests WHERE ${where.join(' AND ')}
       ORDER BY lower(last_name), lower(first_name) LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params,
   );
@@ -57,7 +78,7 @@ export async function listGuests(ctx: Ctx, q: { search?: string; category?: stri
 }
 
 export async function getGuest(ctx: Ctx, id: string) {
-  const r = await ctx.db.query(`SELECT ${COLS} FROM guests WHERE id = $1 AND company_id = $2 AND status = 'ACTIVE'`, [id, ctx.companyId]);
+  const r = await ctx.db.query(`SELECT ${COLS}, ${LINKED} FROM guests WHERE id = $1 AND company_id = $2 AND status = 'ACTIVE'`, [id, ctx.companyId]);
   if (!r.rows[0]) throw new AppError('GUEST_NOT_FOUND', 404, 'Guest not found');
   return r.rows[0];
 }
@@ -76,15 +97,14 @@ export async function createGuest(ctx: Ctx, input: unknown) {
   await assertPhoneFree(ctx, d.phone);
   try {
     const r = await ctx.db.query<{ id: string }>(
-      `INSERT INTO guests (company_id, first_name, last_name, email, phone, company_name, category, notes)
-       VALUES ($8,$1,$2,$3,$4,$5,$6,$7) RETURNING id`,
-      [d.firstName, d.lastName, d.email, d.phone, d.companyName, d.category, d.notes, ctx.companyId],
+      `INSERT INTO guests (company_id, first_name, last_name, email, phone, company_name, category, notes, external_id)
+       VALUES ($8,$1,$2,$3,$4,$5,$6,$7,$9) RETURNING id`,
+      [d.firstName, d.lastName, d.email, d.phone, d.companyName, d.category, d.notes, ctx.companyId, d.externalId],
     );
     await audit(ctx.db, ctx, 'GUEST_CREATED', 'guest', r.rows[0]!.id);
     return getGuest(ctx, r.rows[0]!.id);
   } catch (e) {
-    if ((e as { code?: string }).code === '23505') throw conflict('A guest with this email already exists');
-    throw e;
+    throw duplicateGuest(e) ?? e;
   }
 }
 
@@ -94,13 +114,13 @@ export async function updateGuest(ctx: Ctx, id: string, input: unknown) {
   await assertPhoneFree(ctx, d.phone, id);
   try {
     await ctx.db.query(
-      `UPDATE guests SET first_name=$2, last_name=$3, email=$4, phone=$5, company_name=$6, category=$7, notes=$8, updated_at=now()
+      `UPDATE guests SET first_name=$2, last_name=$3, email=$4, phone=$5, company_name=$6, category=$7, notes=$8,
+              external_id=$10, updated_at=now()
         WHERE id=$1 AND company_id=$9`,
-      [id, d.firstName, d.lastName, d.email, d.phone, d.companyName, d.category, d.notes, ctx.companyId],
+      [id, d.firstName, d.lastName, d.email, d.phone, d.companyName, d.category, d.notes, ctx.companyId, d.externalId],
     );
   } catch (e) {
-    if ((e as { code?: string }).code === '23505') throw conflict('A guest with this email already exists');
-    throw e;
+    throw duplicateGuest(e) ?? e;
   }
   await audit(ctx.db, ctx, 'GUEST_UPDATED', 'guest', id);
   return getGuest(ctx, id);
@@ -123,14 +143,15 @@ export async function deleteGuests(ctx: Ctx, ids: string[]) {
 
 export async function exportGuestsCsv(ctx: Ctx): Promise<string> {
   const r = await ctx.db.query(
-    `SELECT first_name, last_name, email, phone, company_name, category, created_at FROM guests
+    `SELECT external_id, first_name, last_name, email, phone, company_name, category, notes, ${LINKED}, created_at FROM guests
       WHERE company_id = $1 AND status='ACTIVE' ORDER BY lower(last_name), lower(first_name)`,
     [ctx.companyId],
   );
   await audit(ctx.db, ctx, 'GUEST_EXPORTED', 'guest', null, { count: r.rowCount });
+  // Column names match the importer, so this file can be edited and imported again.
   return toCsv(
-    ['first_name', 'last_name', 'email', 'phone', 'company_name', 'category', 'created_at'],
-    r.rows.map((g) => [g.first_name, g.last_name, g.email, g.phone, g.company_name, g.category, g.created_at]),
+    ['guest_id', 'first_name', 'last_name', 'email', 'phone', 'company_name', 'category', 'notes', 'passes', 'check_ins', 'created_at'],
+    r.rows.map((g) => [g.external_id, g.first_name, g.last_name, g.email, g.phone, g.company_name, g.category, g.notes, g.passes, g.checkIns, g.created_at]),
   );
 }
 
@@ -143,6 +164,9 @@ const ALIASES: Record<string, string> = {
   mobile: 'phone', phone_number: 'phone', telephone: 'phone', tel: 'phone',
   company: 'company_name', organization: 'company_name', organisation: 'company_name',
   type: 'category', group: 'category',
+  id: 'external_id', guest_id: 'external_id', unique_id: 'external_id', member_id: 'external_id', member_no: 'external_id',
+  membership_id: 'external_id', membership_no: 'external_id', id_no: 'external_id', id_number: 'external_id', reference: 'external_id',
+  note: 'notes', comments: 'notes', remarks: 'notes',
 };
 const normHeader = (h: string) => {
   const k = h.trim().toLowerCase().replace(/[\s-]+/g, '_');
@@ -186,6 +210,7 @@ export async function analyzeCsv(ctx: Ctx, csv: string): Promise<ImportAnalysis>
   records.forEach((rec, i) => {
     const row = i + 2; // spreadsheet row number: header is row 1
     const r = guestSchema.safeParse({
+      externalId: rec.external_id,
       firstName: rec.first_name ?? '',
       lastName: rec.last_name ?? '',
       email: rec.email ?? '',
@@ -203,8 +228,19 @@ export async function analyzeCsv(ctx: Ctx, csv: string): Promise<ImportAnalysis>
   // duplicates inside the file
   const seenEmail = new Map<string, number>();
   const seenPhone = new Map<string, number>();
+  const seenId = new Map<string, number>();
   for (const p of parsed) {
     if (!p.data) continue;
+    if (p.data.externalId) {
+      const k = p.data.externalId.toLowerCase();
+      const pi = seenId.get(k);
+      if (pi) {
+        errors.push({ row: p.row, field: 'externalId', message: `Duplicate guest ID (also on row ${pi})` });
+        p.data = undefined;
+        continue;
+      }
+      seenId.set(k, p.row);
+    }
     const pe = seenEmail.get(p.data.email);
     if (pe) {
       errors.push({ row: p.row, field: 'email', message: `Duplicate email (also on row ${pe})` });
@@ -225,15 +261,21 @@ export async function analyzeCsv(ctx: Ctx, csv: string): Promise<ImportAnalysis>
   // duplicates against existing guests
   const emails = [...seenEmail.keys()];
   const phones = [...seenPhone.keys()];
-  const ex = await ctx.db.query<{ email: string; phone: string | null }>(
-    "SELECT lower(email) AS email, phone FROM guests WHERE company_id = $3 AND status = 'ACTIVE' AND (lower(email) = ANY($1::text[]) OR phone = ANY($2::text[]))",
-    [emails, phones, ctx.companyId],
+  const ex = await ctx.db.query<{ email: string; phone: string | null; external_id: string | null }>(
+    `SELECT lower(email) AS email, phone, lower(external_id) AS external_id FROM guests
+      WHERE company_id = $3 AND status = 'ACTIVE'
+        AND (lower(email) = ANY($1::text[]) OR phone = ANY($2::text[]) OR lower(external_id) = ANY($4::text[]))`,
+    [emails, phones, ctx.companyId, [...seenId.keys()]],
   );
   const exEmail = new Set(ex.rows.map((x) => x.email));
   const exPhone = new Set(ex.rows.map((x) => x.phone).filter(Boolean));
+  const exId = new Set(ex.rows.map((x) => x.external_id).filter(Boolean));
   for (const p of parsed) {
     if (!p.data) continue;
-    if (exEmail.has(p.data.email)) {
+    if (p.data.externalId && exId.has(p.data.externalId.toLowerCase())) {
+      errors.push({ row: p.row, field: 'externalId', message: 'A guest with this ID already exists' });
+      p.data = undefined;
+    } else if (exEmail.has(p.data.email)) {
       errors.push({ row: p.row, field: 'email', message: 'A guest with this email already exists' });
       p.data = undefined;
     } else if (p.data.phone && exPhone.has(p.data.phone)) {
@@ -280,9 +322,9 @@ export async function commitImport(ctx: Ctx, input: unknown) {
   try {
     ids = await withTx(ctx.db, async (tx) => {
       const r = await tx.query<{ id: string }>(
-        `INSERT INTO guests (company_id, first_name, last_name, email, phone, company_name, category, notes)
-         SELECT $8::uuid, f, l, e, p, c, k, n
-           FROM unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::text[]) AS x(f, l, e, p, c, k, n)
+        `INSERT INTO guests (company_id, first_name, last_name, email, phone, company_name, category, notes, external_id)
+         SELECT $8::uuid, f, l, e, p, c, k, n, xid
+           FROM unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::text[], $9::text[]) AS x(f, l, e, p, c, k, n, xid)
          RETURNING id`,
         [
           a.valid.map((g) => g.firstName),
@@ -293,6 +335,7 @@ export async function commitImport(ctx: Ctx, input: unknown) {
           a.valid.map((g) => g.category),
           a.valid.map((g) => g.notes),
           ctx.companyId,
+          a.valid.map((g) => g.externalId),
         ],
       );
       await audit(tx, ctx, 'GUEST_IMPORTED', 'guest', null, { imported: r.rowCount, skipped: a.errors.length });

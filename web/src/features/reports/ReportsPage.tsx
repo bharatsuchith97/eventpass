@@ -4,12 +4,14 @@ import DownloadIcon from '@mui/icons-material/Download';
 import { useQuery } from '@tanstack/react-query';
 import { api, download } from '../../lib/api/client';
 import { errorMessage, formatDateTime } from '../../lib/utils/format';
-import { DataTable, EmptyState, ErrorAlert, FilterBar, PageHeader, StatusBadge, useToast, type Column } from '../../components/ui';
+import { DataTable, EmptyState, ErrorAlert, FilterBar, MonoCell, NotesCell, PageHeader, StatusBadge, useToast, type Column } from '../../components/ui';
 import { useEvents } from '../events/api';
 import type { Report } from '../../types';
 
 type Row = Report['rows'][number];
+const DATE_KEYS = new Set(['checkedInAt', 'rsvpAt', 'invitedAt', 'openedAt', 'issuedAt', 'eventStart', 'guestAdded']);
 const KINDS = [
+  ['full', 'Complete'],
   ['attendance', 'Attendance'],
   ['noshow', 'No-shows'],
   ['rsvp', 'RSVP'],
@@ -18,7 +20,7 @@ const KINDS = [
 export function ReportsPage() {
   const events = useEvents();
   const [eventId, setEventId] = useState('');
-  const [kind, setKind] = useState<(typeof KINDS)[number][0]>('attendance');
+  const [kind, setKind] = useState<(typeof KINDS)[number][0]>('full');
   const { toast, toastNode } = useToast();
   const q = useQuery({ queryKey: ['report', eventId, kind], queryFn: () => api<Report>(`/events/${eventId}/reports/${kind}`), enabled: !!eventId });
   const r = q.data;
@@ -27,7 +29,10 @@ export function ReportsPage() {
     header: c.label,
     render: (row) => {
       const v = row[c.key];
-      if (c.key === 'checkedInAt' || c.key === 'rsvpAt') return formatDateTime(v as string | null);
+      if (DATE_KEYS.has(c.key)) return formatDateTime(v as string | null);
+      if (c.key === 'notes') return <NotesCell text={v as string | null} />;
+      if (c.key === 'guestId' || c.key === 'ticket' || c.key === 'eventCode') return <MonoCell value={v as string | null} />;
+      if (c.key === 'checkedIn') return v ? <StatusBadge label={String(v)} tone={v === 'Yes' ? 'success' : 'default'} /> : '-';
       if (c.key === 'status') return <StatusBadge label={String(v)} tone={v === 'Checked in' ? 'success' : 'default'} />;
       if (c.key === 'rsvp') return <StatusBadge label={String(v)} tone={v === 'CONFIRMED' ? 'success' : v === 'DECLINED' ? 'error' : 'default'} />;
       return v ?? '-';
@@ -38,7 +43,7 @@ export function ReportsPage() {
     <>
       <PageHeader
         title="Reports"
-        subtitle="Attendance, no-shows and RSVPs"
+        subtitle="Complete guest report, attendance, no-shows and RSVPs. Export any of them as a spreadsheet (CSV)."
         actions={eventId && <Button variant="contained" startIcon={<DownloadIcon />} onClick={() => download(`/events/${eventId}/reports/${kind}?format=csv`, `${kind}-report.csv`).catch((e: unknown) => toast(errorMessage(e), 'error'))}>Export CSV</Button>}
       />
       <FilterBar>
@@ -59,7 +64,7 @@ export function ReportsPage() {
             </Stack>
           )}
           <ErrorAlert error={q.error} onRetry={() => void q.refetch()} />
-          <DataTable columns={columns} rows={r?.rows ?? []} rowKey={(row) => String(row.ticket ?? row.guest) + String(row.email ?? '')} loading={q.isLoading} maxHeight={560} emptyTitle={kind === 'noshow' ? 'No no-shows' : 'No data yet'} emptyBody={chosen ? `Nothing to report for ${chosen.name} yet.` : undefined} />
+          <DataTable columns={columns} rows={r?.rows ?? []} rowKey={(row) => String(row.ticket ?? '') + String(row.email ?? '') + String(row.guest ?? '')} loading={q.isLoading} maxHeight={560} emptyTitle={kind === 'noshow' ? 'No no-shows' : 'No data yet'} emptyBody={chosen ? `Nothing to report for ${chosen.name} yet.` : undefined} />
         </>
       )}
       {toastNode}

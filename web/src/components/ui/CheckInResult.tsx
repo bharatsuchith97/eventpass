@@ -69,7 +69,7 @@ export function CheckInResult({ outcome, onDismiss }: { outcome: ScanOutcome; on
           <>
             <Typography variant="h4" fontWeight={700}>{fullName(guest)}</Typography>
             <Typography variant="h6" sx={{ opacity: 0.95 }}>
-              {guest.category}{guest.companyName ? ` - ${guest.companyName}` : ''}
+              {guest.category}{guest.companyName ? ` - ${guest.companyName}` : ''}{guest.externalId ? ` - ID ${guest.externalId}` : ''}
             </Typography>
           </>
         )}
