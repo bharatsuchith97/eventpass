@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { forwardRef, useState, type ReactNode } from 'react';
 import { Link as RouterLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Alert, Box, Button, IconButton, InputAdornment, Link, Stack, TextField, Typography, type TextFieldProps } from '@mui/material';
 import Visibility from '@mui/icons-material/Visibility';
@@ -118,12 +118,16 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
   );
 }
 
-/** Password input with a show/hide toggle. */
-function PasswordField(props: TextFieldProps) {
+/**
+ * Password input with a show/hide toggle. Forwards the ref to the real <input>: react-hook-form reads the typed
+ * value through it, so without this the form sees an empty password.
+ */
+const PasswordField = forwardRef<HTMLInputElement, TextFieldProps>(function PasswordField(props, ref) {
   const [show, setShow] = useState(false);
   return (
     <TextField
       {...props}
+      inputRef={ref}
       type={show ? 'text' : 'password'}
       slotProps={{
         input: {
@@ -138,7 +142,7 @@ function PasswordField(props: TextFieldProps) {
       }}
     />
   );
-}
+});
 
 /** Big round icon for confirmation screens. */
 function Badge({ children, color }: { children: ReactNode; color: string }) {
