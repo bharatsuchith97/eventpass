@@ -5,6 +5,7 @@ import { config } from '../config';
 import type { Ctx } from '../context';
 import { AppError, conflict, notFound, parse, validation } from '../lib/errors';
 import { generateQrToken, generateTicketNumber, sha256Hex } from '../lib/crypto';
+import { decryptPassToken, encryptPassToken } from '../lib/passTokens';
 import { audit } from './audit';
 import { assertManageEvent } from './events';
 import { escapeHtml, sendMail } from './mailer';
@@ -58,11 +59,11 @@ export async function issueTickets(ctx: Ctx, eventId: string, input: unknown) {
     const tokens = guestIds.map(() => generateQrToken());
     try {
       const r = await ctx.db.query<{ id: string; guest_id: string; qr_token_hash: string }>(
-        `INSERT INTO tickets (company_id, event_id, guest_id, ticket_number, qr_token_hash, expires_at)
-         SELECT $6::uuid, $1, g, n, h, $5 FROM unnest($2::uuid[], $3::text[], $4::text[]) AS x(g, n, h)
+        `INSERT INTO tickets (company_id, event_id, guest_id, ticket_number, qr_token_hash, qr_token_enc, expires_at)
+         SELECT $6::uuid, $1, g, n, h, x.enc, $5 FROM unnest($2::uuid[], $3::text[], $4::text[], $7::text[]) AS x(g, n, h, enc)
          ON CONFLICT (event_id, guest_id) WHERE status <> 'CANCELLED' DO NOTHING
          RETURNING id, guest_id, qr_token_hash`,
-        [eventId, guestIds, guestIds.map(generateTicketNumber), tokens.map(sha256Hex), ev.endDatetime, ctx.companyId],
+        [eventId, guestIds, guestIds.map(generateTicketNumber), tokens.map(sha256Hex), ev.endDatetime, ctx.companyId, tokens.map(encryptPassToken)],
       );
       const byHash = new Map(tokens.map((t) => [sha256Hex(t), t]));
       issued = r.rows.map((row) => ({ ticketId: row.id, guestId: row.guest_id, token: byHash.get(row.qr_token_hash)! }));
@@ -124,8 +125,8 @@ export async function listEventTickets(ctx: Ctx, eventId: string, query: unknown
 }
 
 async function loadTicketForManage(ctx: Ctx, ticketId: string) {
-  const r = await ctx.db.query<{ id: string; event_id: string; status: string; ticket_number: string; guest_id: string }>(
-    'SELECT id, event_id, status, ticket_number, guest_id FROM tickets WHERE id = $1 AND company_id = $2',
+  const r = await ctx.db.query<{ id: string; event_id: string; status: string; ticket_number: string; guest_id: string; qr_token_enc: string | null }>(
+    'SELECT id, event_id, status, ticket_number, guest_id, qr_token_enc FROM tickets WHERE id = $1 AND company_id = $2',
     [ticketId, ctx.companyId],
   );
   const t = r.rows[0];
@@ -143,21 +144,47 @@ export async function cancelTicket(ctx: Ctx, ticketId: string) {
 }
 
 /** Rotates the QR token: the previous QR stops working immediately. Returns the new raw token once. */
+/** Gives the ticket a brand-new QR token: every earlier QR, PDF and emailed link for it stops working. */
 async function rotateToken(ctx: Ctx, ticketId: string): Promise<string> {
   const token = generateQrToken();
   const r = await ctx.db.query(
-    "UPDATE tickets SET qr_token_hash = $2 WHERE id = $1 AND company_id = $3 AND status = 'ACTIVE'",
-    [ticketId, sha256Hex(token), ctx.companyId],
+    "UPDATE tickets SET qr_token_hash = $2, qr_token_enc = $4 WHERE id = $1 AND company_id = $3 AND status = 'ACTIVE'",
+    [ticketId, sha256Hex(token), ctx.companyId, encryptPassToken(token)],
   );
-  if (!r.rowCount) throw conflict('Only active tickets can be reissued');
+  if (!r.rowCount) throw conflict('Only active tickets can be shown or sent');
   return token;
 }
 
+/**
+ * The ticket's existing QR token, so showing, downloading or re-sending a pass never changes it.
+ * Tickets without a readable stored token (issued before tokens were kept, or after a JWT_SECRET change) get one now.
+ */
+async function currentToken(ctx: Ctx, ticketId: string, stored: string | null): Promise<string> {
+  return decryptPassToken(stored) ?? rotateToken(ctx, ticketId);
+}
+
+const passResponse = (ctx: Ctx, ticketId: string, ticketNumber: string, token: string) => ({
+  ticketId,
+  ticketNumber,
+  token,
+  qrValue: checkinUrl(token),
+  passUrl: passUrl(ctx.companySlug, token),
+});
+
+/** Show the guest's current pass (same QR as in their email). */
+export async function getTicketPass(ctx: Ctx, ticketId: string) {
+  const t = await loadTicketForManage(ctx, ticketId);
+  if (t.status !== 'ACTIVE') throw conflict('Only active tickets can be shown or sent');
+  const token = await currentToken(ctx, ticketId, t.qr_token_enc);
+  return passResponse(ctx, ticketId, t.ticket_number, token);
+}
+
+/** Issue a new QR on purpose (lost or leaked pass). The previous QR stops working immediately. */
 export async function reissueTicket(ctx: Ctx, ticketId: string) {
   const t = await loadTicketForManage(ctx, ticketId);
   const token = await rotateToken(ctx, ticketId);
   await audit(ctx.db, ctx, 'TICKET_REISSUED', 'ticket', ticketId);
-  return { ticketId, ticketNumber: t.ticket_number, token, qrValue: checkinUrl(token), passUrl: passUrl(ctx.companySlug, token) };
+  return passResponse(ctx, ticketId, t.ticket_number, token);
 }
 
 interface PassData {
@@ -204,11 +231,11 @@ export async function renderPassPdf(p: PassData, token: string): Promise<Buffer>
   return done;
 }
 
-/** Issues a fresh token (invalidating any earlier QR) and renders the PDF pass. */
+/** Renders the PDF pass with the ticket's current QR (the same one as on screen and in the email). */
 export async function ticketPassPdf(ctx: Ctx, ticketId: string) {
   const t = await loadTicketForManage(ctx, ticketId);
-  const token = await rotateToken(ctx, ticketId);
-  await audit(ctx.db, ctx, 'TICKET_REISSUED', 'ticket', ticketId, { reason: 'pdf' });
+  if (t.status !== 'ACTIVE') throw conflict('Only active tickets can be shown or sent');
+  const token = await currentToken(ctx, ticketId, t.qr_token_enc);
   const pdf = await renderPassPdf(await loadPassData(ctx, ticketId), token);
   return { pdf, filename: `pass-${t.ticket_number}.pdf` };
 }
@@ -265,21 +292,21 @@ const sendSchema = z.object({
   pendingOnly: z.boolean().default(false),
 });
 
-/** (Re)sends invitations. Each send issues a fresh QR token, so older QR codes for that ticket stop working. */
+/** (Re)sends invitations with each ticket's current QR, so a guest's earlier email keeps working. */
 export async function sendInvitations(ctx: Ctx, eventId: string, input: unknown) {
   const d = parse(sendSchema, input);
   if (!d.ticketIds?.length && !d.pendingOnly) throw validation('Choose tickets or "pending only"');
   const ev = await assertManageEvent(ctx, eventId);
   if (closedStatuses.includes(ev.status)) throw conflict(`Cannot send invitations for a ${ev.status.toLowerCase()} event`);
-  const r = await ctx.db.query<{ id: string; guest_id: string }>(
-    `SELECT t.id, t.guest_id FROM tickets t
+  const r = await ctx.db.query<{ id: string; guest_id: string; qr_token_enc: string | null }>(
+    `SELECT t.id, t.guest_id, t.qr_token_enc FROM tickets t
       WHERE t.event_id = $1 AND t.company_id = $4 AND t.status = 'ACTIVE'
         AND ($2::uuid[] IS NULL OR t.id = ANY($2::uuid[]))
         AND ($3::boolean = false OR NOT EXISTS (SELECT 1 FROM invitations i WHERE i.ticket_id = t.id AND i.sent))`,
     [eventId, d.ticketIds ?? null, d.pendingOnly, ctx.companyId],
   );
   const items: Issued[] = [];
-  for (const row of r.rows) items.push({ ticketId: row.id, guestId: row.guest_id, token: await rotateToken(ctx, row.id) });
+  for (const row of r.rows) items.push({ ticketId: row.id, guestId: row.guest_id, token: await currentToken(ctx, row.id, row.qr_token_enc) });
   const sent = items.length ? await deliverInvitations(ctx, eventId, items) : 0;
   return { attempted: items.length, sent, failed: items.length - sent };
 }

@@ -98,6 +98,10 @@ export function apiRouter(): Router {
   r.get('/events/:id/tickets', requirePermission('tickets:manage'), wrap(async (req, res) => res.json(await tickets.listEventTickets(ctxOf(req), idParam(req), req.query))));
   r.post('/events/:id/tickets', requirePermission('tickets:manage'), wrap(async (req, res) => res.status(201).json(await tickets.issueTickets(ctxOf(req), idParam(req), req.body))));
   r.post('/tickets/:id/cancel', requirePermission('tickets:manage'), wrap(async (req, res) => res.json(await tickets.cancelTicket(ctxOf(req), idParam(req)))));
+  r.get('/tickets/:id/pass', requirePermission('tickets:manage'), wrap(async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await tickets.getTicketPass(ctxOf(req), idParam(req)));
+  }));
   r.post('/tickets/:id/reissue', requirePermission('tickets:manage'), wrap(async (req, res) => {
     res.set('Cache-Control', 'no-store');
     res.json(await tickets.reissueTicket(ctxOf(req), idParam(req)));

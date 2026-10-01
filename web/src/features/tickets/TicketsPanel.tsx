@@ -15,7 +15,7 @@ import {
 } from '../../components/ui';
 import { useSettings } from '../../lib/auth/session';
 import type { EventItem, Guest, TicketRow } from '../../types';
-import { useCancelTicket, useEventTickets, useGuestSearch, useIssueTickets, useReissue, useSendInvitations, type ReissuedPass } from './api';
+import { useCancelTicket, useEventTickets, useGuestSearch, useIssueTickets, usePass, useReissue, useSendInvitations } from './api';
 
 const RSVP_TONE = { CONFIRMED: 'success', DECLINED: 'error', PENDING: 'default' } as const;
 
@@ -77,20 +77,17 @@ function AddGuestsDialog({ event, open, onClose }: { event: EventItem; open: boo
 }
 
 function PassDialog({ row, event, onClose }: { row: TicketRow | null; event: EventItem; onClose: () => void }) {
+  const q = usePass(row?.id ?? null);
   const reissue = useReissue();
   const settings = useSettings();
-  const [pass, setPass] = useState<ReissuedPass | null>(null);
+  const [confirmNew, setConfirmNew] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const { toast, toastNode } = useToast();
-  // Only the hash is stored, so viewing a pass issues a fresh QR (any earlier QR stops working).
-  const generate = () => {
-    if (!row) return;
-    reissue.mutate(row.id, { onSuccess: setPass });
-  };
+  const pass = q.data;
   const close = () => {
-    setPass(null);
     setErr(null);
+    setConfirmNew(false);
     reissue.reset();
     onClose();
   };
@@ -99,13 +96,9 @@ function PassDialog({ row, event, onClose }: { row: TicketRow | null; event: Eve
       <Dialog open={!!row} onClose={close} maxWidth="xs" fullWidth>
         <DialogTitle>Digital pass</DialogTitle>
         <DialogContent>
-          {!pass ? (
-            <Stack gap={2}>
-              <Alert severity="info">For security only a fingerprint of each QR is stored. Showing the pass issues a <b>fresh QR</b> and invalidates any previously sent one.</Alert>
-              {reissue.error && <Alert severity="error">{reissue.error.message}</Alert>}
-              <Button variant="contained" onClick={generate} disabled={reissue.isPending}>Show pass for {row ? fullName(row) : ''}</Button>
-            </Stack>
-          ) : (
+          {q.isLoading && <Typography color="text.secondary">Loading pass...</Typography>}
+          <ErrorAlert error={q.error ?? reissue.error} />
+          {pass && (
             <Stack gap={2}>
               {err && <Alert severity="error">{err}</Alert>}
               <PassPreview
@@ -131,10 +124,7 @@ function PassDialog({ row, event, onClose }: { row: TicketRow | null; event: Eve
                     setBusy(true);
                     setErr(null);
                     download(`/tickets/${pass.ticketId}/pass-pdf`, `pass-${pass.ticketNumber}.pdf`, { method: 'POST' })
-                      .then(() => {
-                        toast('PDF downloaded (contains a new QR; the one on screen is now retired)');
-                        setPass(null);
-                      })
+                      .then(() => toast('PDF downloaded'))
                       .catch((e: unknown) => setErr(errorMessage(e)))
                       .finally(() => setBusy(false));
                   }}
@@ -142,6 +132,30 @@ function PassDialog({ row, event, onClose }: { row: TicketRow | null; event: Eve
                   Download PDF
                 </Button>
               </Stack>
+              {confirmNew ? (
+                <Alert
+                  severity="warning"
+                  action={
+                    <Stack direction="row" gap={0.5}>
+                      <Button color="inherit" size="small" onClick={() => setConfirmNew(false)} disabled={reissue.isPending}>Cancel</Button>
+                      <Button
+                        color="inherit"
+                        size="small"
+                        disabled={reissue.isPending}
+                        onClick={() => reissue.mutate(pass.ticketId, { onSuccess: () => { setConfirmNew(false); toast('New QR issued. The previous pass no longer works.'); } })}
+                      >
+                        Issue new QR
+                      </Button>
+                    </Stack>
+                  }
+                >
+                  The guest's current QR, PDF and emailed link will stop working.
+                </Alert>
+              ) : (
+                <Button size="small" color="warning" onClick={() => setConfirmNew(true)} sx={{ alignSelf: 'center' }}>
+                  Lost or shared pass? Issue a new QR
+                </Button>
+              )}
             </Stack>
           )}
         </DialogContent>

@@ -285,7 +285,7 @@ One database. Tables marked **company** carry `company_id` and are always querie
 | `events` | `company_id`, `name`, `event_code`, venue, `start_datetime`, `end_datetime`, `capacity`, `status`, `banner_url`, `created_by` | Event code unique per company; end after start; creator must be the same company's user |
 | `event_managers` | `company_id`, `event_id`, `user_id` | Event and user must belong to that company |
 | `guests` | `company_id`, names, `email`, `phone`, `company_name`, `category`, `status` (`ACTIVE`/`DELETED`), `notes` | Email unique among a company's **active** guests; delete is a soft delete |
-| `tickets` | `company_id`, `event_id`, `guest_id`, `ticket_number` (`EVT-XXXXXX`), `qr_token_hash`, `status`, `rsvp_status`, `expires_at` | Event and guest from the same company; one live ticket per guest per event; ticket number unique per company; token hash unique |
+| `tickets` | `company_id`, `event_id`, `guest_id`, `ticket_number` (`EVT-XXXXXX`), `qr_token_hash`, `qr_token_enc`, `status`, `rsvp_status`, `expires_at` | Event and guest from the same company; one live ticket per guest per event; ticket number unique per company; token hash unique |
 | `invitations` | `company_id`, `ticket_id`, `sent`, `sent_at`, `delivery_status`, `opened_at`, `clicked_at` | |
 | `checkins` | `company_id`, `ticket_id`, `event_id`, `guest_id`, `checked_in_at`, `checked_in_by`, `gate`, `device_id`, `method` (`QR`/`MANUAL`) | **`UNIQUE(ticket_id)`**: a ticket can be checked in once, enforced by the database |
 | `audit_logs` | `company_id`, `user_id`, `action`, `entity_type`, `entity_id`, `timestamp`, `metadata` | Never stores personal data or tokens |
@@ -321,7 +321,9 @@ Guest categories: `VIP`, `SPEAKER`, `SPONSOR`, `STAFF`, `ATTENDEE`, `FAMILY`, `O
 ### Passes (tickets)
 
 - A pass token is 32 random bytes (64 hex characters). The QR code encodes `APP_URL/checkin/<token>`; no names, emails or ids.
-- Only `SHA-256(token)` is stored. So showing, downloading (PDF) or emailing a pass **issues a new token**, and the previous QR stops working.
+- The token is stored twice: as `SHA-256(token)`, which check-in looks up, and encrypted (`qr_token_enc`, AES-256-GCM with a key derived from `JWT_SECRET`; `server/src/lib/passTokens.ts`). So showing, downloading (PDF) or re-sending a pass keeps the **same** QR, and a copy of the database alone cannot produce working passes.
+- **Issue new QR** deliberately replaces the token; the previous QR, PDF and emailed link stop working. Use it for a lost or shared pass.
+- Changing `JWT_SECRET` makes stored tokens unreadable. Those passes keep working at the door and get a new QR the next time they are shown or sent.
 - A pass expires at the event's end time.
 - The PDF pass is a 320×520 pt page drawn with pdfkit.
 
@@ -385,7 +387,8 @@ All routes are under `/api`. Every `POST`/`PUT`/`PATCH`/`DELETE` must send the h
 | GET | `/api/events/:id/stats` | `reports:view` |
 | GET / POST | `/api/events/:id/tickets` | `tickets:manage` |
 | POST | `/api/tickets/:id/cancel` | `tickets:manage` |
-| POST | `/api/tickets/:id/reissue` | `tickets:manage` (returns a fresh token) |
+| GET | `/api/tickets/:id/pass` | `tickets:manage` (the current pass; same QR as in the email) |
+| POST | `/api/tickets/:id/reissue` | `tickets:manage` (issues a new QR; the old one stops working) |
 | POST | `/api/tickets/:id/pass-pdf` | `tickets:manage` (PDF download) |
 | POST | `/api/events/:id/invitations` | `invitations:send` |
 | GET | `/api/invitations` | `invitations:send` |
@@ -442,7 +445,7 @@ All routes are under `/api`. Every `POST`/`PUT`/`PATCH`/`DELETE` must send the h
 | Rate limits | 600 requests/min per IP overall; 30 per 15 min on auth routes; 60/min on public pass routes |
 | Request size | 100 KB JSON (6 MB for guest import) |
 | Enumeration | Same responses and timing for unknown emails on login and password reset |
-| QR passes | 256-bit random tokens; only hashes stored; no personal data in the QR |
+| QR passes | 256-bit random tokens; looked up by hash, stored encrypted with a server-side key; no personal data in the QR |
 | Errors | Clients never see stack traces or database messages |
 | Privacy | Door search masks emails; audit log excludes personal data and tokens; CSV formula-injection guard |
 | Crawlers | App routes `noindex`; `robots.txt` blocks `/api`, `/pass`, `/checkin`, `/admin` |

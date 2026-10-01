@@ -443,7 +443,7 @@ td.c { text-align: center; font-variant-numeric: tabular-nums; }
   <section id="checkin">
     <div class="sec-num">06</div>
     <h2>QR check-in</h2>
-    <p class="intro">A pass carries a random token and nothing else. The database stores only its SHA-256 hash, so a leaked database cannot be turned back into working passes.</p>
+    <p class="intro">A pass carries a random token and nothing else. Check-in looks it up by its SHA-256 hash; the token itself is stored only in encrypted form, so a copy of the database alone cannot be turned into working passes.</p>
     <figure>
       <div class="fig-scroll">
         <svg class="dg" viewBox="0 0 1120 330" role="img" aria-label="A scanned token is hashed, the matching ticket row of the scanner's company is locked, and six checks run in order: ticket exists, same event, not cancelled, not already used, not expired, event open. Then a check-in row is inserted, guarded by a unique constraint on the ticket. Success commits and shows green; an already-used ticket or a lost race shows amber; every other failure shows red.">
@@ -534,7 +534,7 @@ td.c { text-align: center; font-variant-numeric: tabular-nums; }
       <figcaption>The row lock makes simultaneous scans of one pass queue behind each other, and <code>UNIQUE(ticket_id)</code> on <code>checkins</code> is the final guard: in tests, 12 simultaneous scans of one pass produce exactly one success. A pass from another company is simply not found. Door phones show green (let in), amber (already used, with the time of first entry) or red (do not admit).</figcaption>
     </figure>
     <div class="notes">
-      <div class="note"><b>Issuing and resending</b><p>32 random bytes become the token. Because only the hash is kept, showing, downloading or emailing a pass issues a fresh token and the old QR stops working.</p></div>
+      <div class="note"><b>Showing and resending</b><p>32 random bytes become the token. Showing, downloading or re-sending a pass keeps the same QR. "Issue new QR" replaces it on purpose for a lost or shared pass, and the old QR stops working.</p></div>
       <div class="note"><b>Guest pass page</b><p><code>/pass/&lt;company-slug&gt;/&lt;token&gt;</code> needs no login. The slug identifies the company, and the lookup is limited to it. The page shows only the event and that guest's own pass, and lets them RSVP.</p></div>
       <div class="note"><b>Manual check-in</b><p>Search by name runs the same locked transaction by ticket id. Door staff see masked email addresses only.</p></div>
     </div>

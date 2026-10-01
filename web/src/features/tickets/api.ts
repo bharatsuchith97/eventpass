@@ -65,6 +65,22 @@ export interface ReissuedPass {
   qrValue: string;
   passUrl: string;
 }
+/** The guest's current pass: the same QR as in their invitation email. */
+export function usePass(ticketId: string | null) {
+  return useQuery({
+    queryKey: ['pass', ticketId],
+    queryFn: () => api<ReissuedPass>(`/tickets/${ticketId}/pass`),
+    enabled: !!ticketId,
+    staleTime: Infinity,
+    gcTime: 0, // don't keep pass tokens around after the dialog closes
+  });
+}
+
+/** Issue a new QR on purpose (lost or leaked pass); the previous one stops working. */
 export function useReissue() {
-  return useMutation({ mutationFn: (id: string) => api<ReissuedPass>(`/tickets/${id}/reissue`, { method: 'POST' }) });
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<ReissuedPass>(`/tickets/${id}/reissue`, { method: 'POST' }),
+    onSuccess: (pass) => qc.setQueryData(['pass', pass.ticketId], pass),
+  });
 }

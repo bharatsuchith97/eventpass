@@ -200,3 +200,62 @@ describe('email failures are reported, never hidden', () => {
     }
   });
 });
+
+describe('passes stay the same until a new QR is issued on purpose', () => {
+  async function setupPass(label: string) {
+    const { c } = await signup(app, label);
+    const ev = (await c.post('/api/events', { name: uniq('E'), startDatetime: future(1), endDatetime: future(4) })).body;
+    await c.post(`/api/events/${ev.id}/status`, { action: 'publish' });
+    const g = (await c.post('/api/guests', { firstName: 'Same', lastName: 'Pass', email: `${uniq('sp')}@example.com` })).body;
+    const t = (await c.post(`/api/events/${ev.id}/tickets`, { guestIds: [g.id], send: true })).body.tickets[0];
+    return { c, ev, ticketId: t.ticketId as string };
+  }
+
+  it('show, PDF and re-sending all keep the QR from the first email', async () => {
+    const { c, ev, ticketId } = await setupPass('Stable');
+    const emailed = outbox.filter((m) => m.subject.startsWith('Your pass for')).at(-1)!;
+    const tokenInEmail = /\/pass\/[a-z0-9-]+\/([0-9a-f]{64})/.exec(emailed.text)![1];
+
+    const first = (await c.get(`/api/tickets/${ticketId}/pass`)).body;
+    const second = (await c.get(`/api/tickets/${ticketId}/pass`)).body;
+    expect(first.token).toBe(tokenInEmail);
+    expect(second.token).toBe(tokenInEmail);
+
+    expect((await c.post(`/api/tickets/${ticketId}/pass-pdf`)).status).toBe(200);
+    expect((await c.post(`/api/events/${ev.id}/invitations`, { ticketIds: [ticketId] })).body.sent).toBe(1);
+    expect((await c.get(`/api/tickets/${ticketId}/pass`)).body.token).toBe(tokenInEmail);
+
+    // the original emailed QR still checks in
+    expect((await c.post('/api/checkin', { token: tokenInEmail })).status).toBe(200);
+  });
+
+  it('"Issue new QR" replaces the pass and the old QR stops working', async () => {
+    const { c, ticketId } = await setupPass('Rotate');
+    const old = (await c.get(`/api/tickets/${ticketId}/pass`)).body.token as string;
+    const fresh = (await c.post(`/api/tickets/${ticketId}/reissue`)).body.token as string;
+    expect(fresh).not.toBe(old);
+    expect((await c.get(`/api/tickets/${ticketId}/pass`)).body.token).toBe(fresh);
+    expect((await c.post('/api/checkin', { token: old })).body.error.code).toBe('INVALID_TICKET');
+    expect((await c.post('/api/checkin', { token: fresh })).status).toBe(200);
+  });
+
+  it('the stored token is encrypted, and older passes without one get a token once', async () => {
+    const { c, ticketId } = await setupPass('Legacy');
+    const token = (await c.get(`/api/tickets/${ticketId}/pass`)).body.token as string;
+    const row = (await db().query('SELECT qr_token_enc FROM tickets WHERE id = $1', [ticketId])).rows[0];
+    expect(row.qr_token_enc).toMatch(/^v1\./);
+    expect(row.qr_token_enc).not.toContain(token);
+
+    await db().query('UPDATE tickets SET qr_token_enc = NULL WHERE id = $1', [ticketId]); // like a pass issued before this feature
+    const a = (await c.get(`/api/tickets/${ticketId}/pass`)).body.token as string;
+    const b = (await c.get(`/api/tickets/${ticketId}/pass`)).body.token as string;
+    expect(a).not.toBe(token);
+    expect(b).toBe(a);
+  });
+
+  it('another company cannot read a pass', async () => {
+    const { ticketId } = await setupPass('Owner');
+    const other = await signup(app, 'Snoop');
+    expect((await other.c.get(`/api/tickets/${ticketId}/pass`)).status).toBe(404);
+  });
+});
