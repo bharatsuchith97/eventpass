@@ -1,80 +1,113 @@
 # Inviteley
 
-Multi-tenant event management and QR check-in. All companies share **one PostgreSQL database**; every company-owned row carries `company_id`, every query is scoped to the company in the session, and composite foreign keys stop rows of different companies from being linked.
+Event guest management and QR check-in for companies: guest lists, personal QR passes, email invitations, RSVP, door check-in and reports.
 
-## Run it locally (no Docker, no Postgres install)
+**Live:** https://inviteley.com · **Docs:** [technical reference](docs/technical-reference.md) · [architecture diagrams](docs/architecture.html) · [deploy guide](DEPLOY.md)
 
-```bash
-npm install --ignore-scripts   # see "Windows note" below if a normal install fails
-npm run dev                    # API on :4000 with a real embedded PostgreSQL (data in server/.dev)
-npm run dev:web                # web app on http://localhost:5173 (proxies /api to :4000)
-```
+- **Multi-tenant:** many companies share one installation and one PostgreSQL database. Every company-owned row carries `company_id`, every query is scoped to the company in the session, and composite foreign keys stop rows of different companies from being linked.
+- **Approved sign-ups:** companies request access; a platform superadmin approves them at `/admin` before anything is created.
+- **Public landing page** at `/` (static, SEO-friendly HTML); the React app serves everything else.
 
-Open http://localhost:5173, choose **Request a company account**, then approve it as the superadmin at http://localhost:5173/admin (the dev login is printed in the API console on startup and stored in `server/.dev/dev-secrets.json`). After approval you can sign in as the new company's admin.
-In development, emails (invitations, password reset, approvals) are printed to the API console instead of being sent.
+## Features
 
-```bash
-npm test               # 69 tests against a real throw-away PostgreSQL
-npm run typecheck      # strict TypeScript, both packages
-npm run lint           # ESLint (no `any` allowed)
-npm run migrate:status # applied / pending migrations
-npm run migrate        # apply pending migrations
-```
+| Area | What it does |
+|---|---|
+| Guests | Add or import from CSV (preview with row-level errors, duplicate checks), your own **guest ID** per guest, notes, categories (VIP, speaker, ...), search by name, email, phone or ID, soft delete, CSV export that can be re-imported |
+| Passes | One QR pass per guest per event; digital pass, printable page and PDF. The **same QR** is kept when a pass is shown, downloaded or re-sent; **Issue new QR** replaces a lost or shared one |
+| Invitations | Email with the QR pass inline, RSVP from the guest's pass page, sent/opened tracking, failed sends reported in the app and logs |
+| Check-in | Phone camera scanning or search by name/guest ID; full-screen green / amber / red result; each pass checks in exactly once, even with simultaneous scans |
+| Reports | Live dashboard; **Complete** report (one row per guest per pass with every guest field, notes, RSVP, invitation and check-in details), attendance, no-shows, RSVP; per event or across all events, as CSV |
+| Branding | Company logo (centred on passes, PDFs, emails, the guest pass page and the app header) and brand colour (colour picker) |
+| Team | Company admin, event manager and check-in staff roles; audit log |
+| Platform | Superadmin console: approve/reject sign-ups, suspend/reactivate companies, change plans (Starter 3 events / 500 guests per event, Business 50 / 5,000, Enterprise unlimited) |
 
-## Production
-
-**Step-by-step guide: [DEPLOY.md](DEPLOY.md)**: Option A, Render + Neon (`render.yaml`, recommended); Option B, one free Oracle Cloud VM with Docker Compose. Option B in short:
+## Run it locally (no Docker, no PostgreSQL install)
 
 ```bash
-cp .env.example .env    # fill in DOMAIN, DB_PASSWORD, JWT_SECRET, SUPERADMIN_*, SMTP_URL
-docker compose up -d --build
+npm install
+npm run dev       # API on :4000 with a real embedded PostgreSQL (data in server/.dev)
+npm run dev:web   # web app on http://localhost:5173 (proxies /api to :4000)
 ```
 
-`docker-compose.yml` runs Caddy (automatic Let's Encrypt HTTPS for `DOMAIN`), the app and PostgreSQL; only Caddy's ports 80/443 are published.
-Set `DATABASE_URL` to use a managed PostgreSQL (Supabase, Neon, Render, ...) instead of the bundled container; no special database permissions are needed. Migrations run automatically on boot.
-`deploy/backup.sh` dumps the database; `deploy/restore.sh` restores a dump.
+1. Open http://localhost:5173 and choose **Request access**.
+2. Approve it as the superadmin at http://localhost:5173/admin. The dev login is printed in the API console on startup and kept in `server/.dev/dev-secrets.json`.
+3. Sign in as the new company's admin.
 
-## Architecture
+In development, emails are printed to the API console instead of being sent.
 
-Diagrams (deployment, request path, signup approval, creating a company, QR check-in, keeping companies apart, roles): open [docs/architecture.html](docs/architecture.html) in a browser.
-Full technical reference (stack and versions, configuration, data model, business rules, every API route, security controls, tests): [docs/technical-reference.md](docs/technical-reference.md).
+| Command | What it does |
+|---|---|
+| `npm test` | 81 server tests against a real throw-away PostgreSQL |
+| `npm run typecheck` | Strict TypeScript, both packages |
+| `npm run lint` | ESLint (`any` is an error) |
+| `npm run build` | Server bundle and web app |
+| `npm run migrate:status` / `npm run migrate` | Show / apply database migrations (they also run on every start) |
+
+## Deploying
+
+Full guide: **[DEPLOY.md](DEPLOY.md)**.
+
+- **Option A, used for inviteley.com:** Render runs the `Dockerfile` (`render.yaml`), Neon hosts PostgreSQL, Brevo sends email.
+- **Option B:** one server (e.g. a free Oracle Cloud VM) with `docker compose up -d --build`: Caddy for automatic HTTPS, the app, and PostgreSQL. `deploy/backup.sh` and `deploy/restore.sh` back up and restore the database.
+
+**Continuous integration** (`.github/workflows/ci.yml`): every push and pull request runs typecheck, lint, the tests and the web build. Pushes to `main` that pass trigger Render's deploy hook (`RENDER_DEPLOY_HOOK_URL` repository secret); Render's own auto-deploy is off, so failing commits never go live.
+
+### Configuration
+
+All settings are environment variables, validated at start-up (`server/src/config.ts`). See `.env.example` for the full list.
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string (any ordinary login; no special permissions) |
+| `APP_URL` | Public address, e.g. `https://inviteley.com`; used in emailed links, the sitemap and CSRF checks |
+| `JWT_SECRET` | Signs sessions and derives the key that encrypts stored QR tokens. **Don't change it** once passes are sent |
+| `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD` | Platform superadmin, created or updated on every start |
+| `SMTP_URL`, `MAIL_FROM` | Outgoing email. On start the app logs `[mail] SMTP connection OK` or the exact failure |
+| `TRUST_PROXY` | Number of proxies in front of the app (1 on Render or behind Caddy) |
+
+## Project layout
 
 ```
-server/  Express + TypeScript (strict), pg, zod
-  src/services/   all business logic and authorization (routes are thin)
-  src/db/         connection pool, migrator, SQL migrations
-web/     React 18 + TypeScript (strict) + MUI + TanStack Query + Zustand + React Hook Form + Zod
-  index.html      public landing page: static, server-rendered HTML (+ src/landing/), indexable, no React
-  app.html        shell for the signed-in React app, served for every other route with noindex
+server/                Express + TypeScript (strict), pg, Zod
+  src/services/        all business logic and authorization (routes are thin)
+  src/db/migrations/   numbered SQL migrations (001–004), applied on start
+  src/lib/             permissions matrix, crypto, pass-token encryption, CSV
+  test/                Vitest suites against an embedded PostgreSQL
+web/                   React 18 + TypeScript + MUI + TanStack Query + React Hook Form + Zod
+  index.html           public landing page (static HTML + src/landing/), indexable, no React
+  app.html             shell of the React app, served for every other route with noindex
+deploy/                Caddyfile, backup and restore scripts
+docs/                  technical reference and architecture diagrams
+render.yaml            Render service definition
+.github/workflows/     CI and deploy
 ```
 
-* **Landing page & SEO:** `/` is plain HTML with its own ~7 KB CSS/JS, meta/Open Graph tags and schema.org JSON-LD (`SoftwareApplication`, `FAQPage`). `__APP_URL__` in it is replaced with the `APP_URL` origin when served. The server also generates `/robots.txt` (blocks `/api`, `/pass`, `/checkin`, `/admin`) and `/sitemap.xml`. All app routes are `noindex` (meta tag + `X-Robots-Tag`), since pass links carry secret tokens.
+The repository and some internal names (package names, cookie names, the database name) still say `eventpass`, the product's earlier name. They are deliberately unchanged: renaming them would sign everyone out or create a second Render service.
 
-* **Company scoping:** session cookie -> user id -> one query for the user, their company, its status and plan -> `Ctx` with `companyId`. Every service query filters by `ctx.companyId`, which is *never* read from a request. Composite foreign keys on `(company_id, id)` make the database reject, for example, a ticket for one company's event and another company's guest.
-* **Signup approval** (`services/platform.ts`): registering only files a `company_requests` row (password already bcrypt-hashed). Nothing is created until a platform superadmin approves it at `/admin`; the requester is emailed either way. Superadmins live in `platform_admins`, use a separate `ep_admin` cookie and a JWT audience that tenant routes reject, and can suspend/reactivate companies and change their plan. They never get access to company data.
-* **Approval** (`services/platform.ts` + `services/tenants.ts`): one transaction claims the request (`UPDATE … WHERE status = 'PENDING'`), creates the company, its settings, its first admin and their password hash, and clears the request's copy of the hash. Any failure rolls all of it back.
-* **Migrations:** numbered `.sql` files directly in `server/src/db/migrations/` with `-- @down` sections, recorded in `schema_migrations`; an advisory lock prevents concurrent runs.
-* **QR tokens:** 32 random bytes (hex). The QR encodes `https://<app>/checkin/<token>` - no PII, no ids. Check-in looks tickets up by `SHA-256(token)`; the token itself is also stored, encrypted (AES-256-GCM, key derived from `JWT_SECRET`), so showing, downloading or re-sending a pass keeps the same QR. A copy of the database alone cannot produce working passes. **Issue new QR** (`POST /tickets/:id/reissue`) replaces a lost or leaked pass and retires the old one.
-* **Check-in:** one transaction with `SELECT ... FOR UPDATE` on the ticket, re-check of status/expiry/event, `INSERT INTO checkins` guarded by `UNIQUE(ticket_id)`. Concurrency is covered by tests (12 simultaneous scans -> exactly one success).
-* **Guest pass page** (`/pass/<company-slug>/<token>`): unauthenticated, shows only event info + the guest's own pass and lets them RSVP. The slug identifies the company without putting a company id in the QR, and lookups are limited to that company.
+## How it works (short version)
+
+- **Company scoping:** session cookie → user → their company, its status and plan (one query) → a `Ctx` with `companyId` that every service uses. The company is never read from the request.
+- **Sign-up approval:** registering only stores a request with the password already hashed. Approval runs in one transaction: claim the request (`UPDATE … WHERE status = 'PENDING'`), create the company, its settings and first admin.
+- **QR passes:** 32 random bytes; the QR holds only `https://<app>/checkin/<token>`, no personal data. Check-in looks passes up by `SHA-256(token)`; the token is also stored encrypted (AES-256-GCM), so a copy of the database alone cannot produce working passes.
+- **Check-in:** one transaction locks the ticket row, re-checks status, expiry and event, then inserts the check-in, guarded by `UNIQUE(ticket_id)`.
+- **Guest pass page** (`/pass/<company-slug>/<token>`): no login; shows only the event and that guest's own pass, and lets them RSVP.
+- **SEO:** the landing page carries meta, Open Graph and JSON-LD (`SoftwareApplication`, `FAQPage`); the server generates `robots.txt` and `sitemap.xml` from `APP_URL`; every app page is `noindex`, because pass links carry secret tokens.
+
+Details for each of these, plus every API route and table, are in the [technical reference](docs/technical-reference.md).
 
 ## Security controls
 
-JWT in an `HttpOnly`, `SameSite=Strict` cookie (`Secure` in production) with a password-version claim (changing/resetting a password logs out other sessions) - CSRF custom-header + Origin check on every state-changing request - server-side RBAC matrix (`server/src/lib/permissions.ts`) - Zod validation on all input - parameterised SQL everywhere - Helmet/CSP, `Referrer-Policy: no-referrer` - rate limiting (auth, public pass, global) - bcrypt password hashing with constant-time-ish handling of unknown emails - no account enumeration on login / password reset - CSV export formula-injection guard - masked emails on the door-side search - audit log that never stores PII or tokens - errors never expose stack traces or DB details.
+Sessions in `HttpOnly`, `SameSite=Strict`, `Secure` cookies with a password-version claim (changing a password signs out other sessions) · separate superadmin cookie and token audience · CSRF header + Origin check on every state-changing request · server-side permission matrix (`server/src/lib/permissions.ts`) · Zod validation on all input · parameterised SQL · Helmet/CSP, `Referrer-Policy: no-referrer` · rate limiting · bcrypt password hashing · no account enumeration on sign-in or password reset · uploaded logos checked by their bytes, not their name · CSV formula-injection guard · masked emails at the door · audit log without personal data or tokens · errors never expose internals.
 
-## What is in the MVP and what is not
+## Not built yet / known gaps
 
-Built: auth (email + password, reset, change password), company settings, team + RBAC, events (draft -> published -> ongoing -> completed/cancelled/archived, duplicate, manager assignment), guests (CRUD, search, validated CSV import with preview and row-level errors, soft delete, CSV export), QR passes (digital pass, printable, PDF), email invitations with open tracking, RSVP, camera scanner + manual search check-in with full-screen green/amber/red results, live event dashboard with charts, attendance / no-show / RSVP reports with CSV export, audit log, plan limits (Starter: 3 active events, 500 guests/event).
-
-Deliberately not built (designed for): magic-link and Google sign-in, Excel/PDF report export, Google Sheets integration (UI placeholder + `integrations:manage` permission only), billing, Apple/Google Wallet, WhatsApp, SSO, custom domains.
-
-Known gaps to be aware of:
-* Excel (`.xlsx`) import is not supported - CSV only.
-* Company isolation is enforced in application code (every query filters by `company_id`) plus composite foreign keys; PostgreSQL row-level security is not used yet and is the natural next hardening step.
-* Camera scanning needs HTTPS (or localhost). It was not exercisable in the automated browser used during development; the manual-search and pasted-code paths were.
-* Email open tracking counts a visit to the guest pass page, not a tracking pixel.
-* Encryption at rest and TLS are infrastructure concerns (encrypted volumes, managed Postgres, TLS proxy) and are not configured by this repo.
+- **Not built:** magic-link and Google sign-in, SSO, Excel/PDF report export, Google Sheets (placeholder only), billing, Apple/Google Wallet, WhatsApp, offline check-in.
+- CSV import only; Excel files must be saved as CSV first.
+- Company isolation is enforced in application code plus composite foreign keys; PostgreSQL row-level security is the natural next hardening step.
+- The tests cover the server only. The web app has no automated tests; it has been checked by hand and with browser scripts.
+- Rate limits are counted in memory, per process.
+- Email "opened" means the guest visited their pass page; there is no tracking pixel.
 
 ## Windows note
 
-If `npm install` fails while running esbuild's post-install step (it spawns a binary and can fail when the project sits under a very long path or is locked by antivirus), use `npm install --ignore-scripts`. Windows also cannot start executables whose path exceeds 260 characters - keep the project in a short path such as `C:\dev\eventpass`.
+If `npm install` fails during esbuild's post-install step (very long paths or antivirus locks), use `npm install --ignore-scripts`. Windows cannot start executables whose path exceeds 260 characters, so keep the project in a short path.
