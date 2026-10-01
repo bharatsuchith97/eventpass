@@ -11,7 +11,7 @@ import type { ImportPreview } from '../../types';
 interface CommitResult {
   imported: number;
   skippedRows: number;
-  tickets?: { issued: number; invited: number };
+  tickets?: { issued: number; invited: number; failed: number };
 }
 
 const TEMPLATE = 'first_name,last_name,email,phone,company_name,category\nAda,Lovelace,ada@example.com,+15550000001,Analytical Engines,VIP\n';
@@ -80,11 +80,11 @@ export function ImportGuestsPage() {
         <Card variant="outlined">
           <CardContent>
             <Stack gap={2} alignItems="flex-start">
-              <Alert severity="success" sx={{ width: '100%' }}>
+              <Alert severity={result.tickets?.failed ? 'warning' : 'success'} sx={{ width: '100%' }}>
                 Imported {result.imported} guest{result.imported === 1 ? '' : 's'}
                 {result.skippedRows ? `, skipped ${result.skippedRows} row${result.skippedRows === 1 ? '' : 's'} with problems` : ''}
                 {result.tickets
-                  ? `. Created ${result.tickets.issued} pass${result.tickets.issued === 1 ? '' : 'es'}${result.tickets.invited ? ` and sent ${result.tickets.invited} invitation${result.tickets.invited === 1 ? '' : 's'}` : ''}.`
+                  ? `. Created ${result.tickets.issued} pass${result.tickets.issued === 1 ? '' : 'es'}${result.tickets.invited ? ` and sent ${result.tickets.invited} invitation${result.tickets.invited === 1 ? '' : 's'}` : ''}.${result.tickets.failed ? ` ${result.tickets.failed} invitation${result.tickets.failed === 1 ? '' : 's'} could not be emailed; use "Send pending invitations" on the event once email works.` : ''}`
                   : '.'}
               </Alert>
               <Stack direction="row" gap={1}>

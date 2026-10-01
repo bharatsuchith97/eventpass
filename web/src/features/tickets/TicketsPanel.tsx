@@ -26,8 +26,14 @@ function AddGuestsDialog({ event, open, onClose }: { event: EventItem; open: boo
   const opts = useGuestSearch(text);
   const issue = useIssueTickets(event.id);
   const { toast, toastNode } = useToast();
-  const done = (r: { issued: number; invited: number }) => {
-    toast(r.issued ? `${r.issued} pass${r.issued === 1 ? '' : 'es'} created${r.invited ? `, ${r.invited} invitation${r.invited === 1 ? '' : 's'} sent` : ''}` : 'Those guests already have passes');
+  const done = (r: { issued: number; invited: number; failed: number }) => {
+    if (!r.issued) toast('Those guests already have passes', 'info');
+    else {
+      const passes = `${r.issued} pass${r.issued === 1 ? '' : 'es'} created`;
+      const sent = r.invited ? `, ${r.invited} invitation${r.invited === 1 ? '' : 's'} sent` : '';
+      const failed = r.failed ? `. ${r.failed} invitation${r.failed === 1 ? '' : 's'} could not be emailed: try the send button on the guest's row, or check the email settings` : '';
+      toast(passes + sent + failed, r.failed ? 'error' : 'success');
+    }
     setPicked([]);
     onClose();
   };

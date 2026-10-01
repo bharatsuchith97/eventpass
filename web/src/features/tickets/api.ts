@@ -39,7 +39,7 @@ export function useIssueTickets(eventId: string) {
   const inv = useInvalidate(eventId);
   return useMutation({
     mutationFn: (body: { guestIds?: string[]; allGuests?: boolean; send: boolean }) =>
-      api<{ issued: number; invited: number }>(`/events/${eventId}/tickets`, { method: 'POST', body }),
+      api<{ issued: number; invited: number; failed: number }>(`/events/${eventId}/tickets`, { method: 'POST', body }),
     onSuccess: inv,
   });
 }

@@ -44,7 +44,7 @@ export async function issueTickets(ctx: Ctx, eventId: string, input: unknown) {
     if (found.rowCount !== new Set(d.guestIds).size) throw notFound('Guest');
   }
   const guestIds = candidates.rows.map((r) => r.id);
-  if (guestIds.length === 0) return { issued: 0, invited: 0, tickets: [] as { ticketId: string; guestId: string }[] };
+  if (guestIds.length === 0) return { issued: 0, invited: 0, failed: 0, tickets: [] as { ticketId: string; guestId: string }[] };
 
   if (ctx.limits.maxGuestsPerEvent !== null) {
     const n = await ctx.db.query("SELECT count(*)::int AS n FROM tickets WHERE company_id = $2 AND event_id = $1 AND status <> 'CANCELLED'", [eventId, ctx.companyId]);
@@ -76,7 +76,8 @@ export async function issueTickets(ctx: Ctx, eventId: string, input: unknown) {
 
   let invited = 0;
   if (d.send && issued.length) invited = await deliverInvitations(ctx, eventId, issued);
-  return { issued: issued.length, invited, tickets: issued.map(({ ticketId, guestId }) => ({ ticketId, guestId })) };
+  const failed = d.send ? issued.length - invited : 0; // emails the mail server refused; the passes still exist
+  return { issued: issued.length, invited, failed, tickets: issued.map(({ ticketId, guestId }) => ({ ticketId, guestId })) };
 }
 
 const listSchema = z.object({

@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { Express } from 'express';
 import { migrationsDir, status } from '../src/db/migrator';
+import { resetConfigForTests } from '../src/config';
 import { outbox } from '../src/services/mailer';
 import { client, db, future, getApp, login, PASSWORD, signup, uniq } from './helpers';
 
@@ -175,5 +176,27 @@ describe('E2E happy path: signup -> event -> import -> pass -> scan -> report', 
     expect((await c2.post('/api/auth/change-password', { currentPassword: 'wrong', newPassword: 'Whatever12345' })).status).toBe(400);
     expect((await c2.post('/api/auth/change-password', { currentPassword: 'BrandNew12345', newPassword: 'Whatever12345' })).status).toBe(200);
     expect((await c2.get('/api/auth/me')).status).toBe(200); // fresh cookie issued
+  });
+});
+
+describe('email failures are reported, never hidden', () => {
+  it('a pass is still created when its invitation cannot be emailed, and the failure is counted', async () => {
+    const { c } = await signup(app, 'Mailfail');
+    const ev = (await c.post('/api/events', { name: uniq('E'), startDatetime: future(1), endDatetime: future(4) })).body;
+    await c.post(`/api/events/${ev.id}/status`, { action: 'publish' });
+    const g = (await c.post('/api/guests', { firstName: 'No', lastName: 'Mail', email: `${uniq('nm')}@example.com` })).body;
+    // point the mailer at a port where nothing listens, so every send is refused
+    process.env.SMTP_URL = 'smtp://127.0.0.1:2';
+    resetConfigForTests();
+    try {
+      const r = await c.post(`/api/events/${ev.id}/tickets`, { guestIds: [g.id], send: true });
+      expect(r.status).toBe(201);
+      expect(r.body).toMatchObject({ issued: 1, invited: 0, failed: 1 });
+      const list = await c.get(`/api/events/${ev.id}/tickets`);
+      expect(list.body.items[0].invitationStatus).toBe('FAILED');
+    } finally {
+      delete process.env.SMTP_URL;
+      resetConfigForTests();
+    }
   });
 });

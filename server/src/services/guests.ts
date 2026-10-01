@@ -302,13 +302,13 @@ export async function commitImport(ctx: Ctx, input: unknown) {
     if ((e as { code?: string }).code === '23505') throw conflict('Some guests were added while importing. Please review the file again.');
     throw e;
   }
-  const result: { imported: number; skippedRows: number; tickets?: { issued: number; invited: number } } = {
+  const result: { imported: number; skippedRows: number; tickets?: { issued: number; invited: number; failed: number } } = {
     imported: ids.length,
     skippedRows: new Set(a.errors.map((e) => e.row)).size,
   };
   if (d.eventId && d.generatePasses) {
     const t = await issueTickets(ctx, d.eventId, { guestIds: ids, send: d.sendInvitations });
-    result.tickets = { issued: t.issued, invited: t.invited };
+    result.tickets = { issued: t.issued, invited: t.invited, failed: t.failed };
   }
   return result;
 }
