@@ -26,7 +26,8 @@ function BrandTheme({ children }: { children: ReactNode }) {
   const { data: me } = useMe();
   const { data: settings } = useSettings(!!me);
   setDisplayTimezone(settings?.timezone);
-  const primary = settings?.primaryBrandColor ?? '#1565c0';
+  // Before sign-in (and for companies without a colour) use the Inviteley blue from the landing page.
+  const primary = settings?.primaryBrandColor ?? '#1f5eff';
   const theme = useMemo(
     () =>
       createTheme({
