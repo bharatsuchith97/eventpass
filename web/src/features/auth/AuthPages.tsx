@@ -173,8 +173,11 @@ export function LoginPage() {
   const m = useMutation({
     mutationFn: (v: { email: string; password: string }) => api<{ user: SessionUser }>('/auth/login', { method: 'POST', body: v }),
     onSuccess: ({ user }) => {
-      qc.clear();
       qc.setQueryData(ME_KEY, user);
+      // Drop anything cached before sign-in, but with resetQueries rather than clear(): clear() detaches components
+      // that are already watching a query (e.g. the theme reading the company's brand colour), so they would keep
+      // showing pre-sign-in values until the page is reloaded.
+      void qc.resetQueries({ predicate: (q) => q.queryKey[0] !== ME_KEY[0] });
       nav(next, { replace: true });
     },
     onError: (e) => applyServerErrors(e, setError),
